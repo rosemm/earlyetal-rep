@@ -699,7 +699,7 @@ inits2 <- inits1
 
 library(R2jags) 
 q1m1.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 1000)
 ```
 
 ### Model 2: Bachelors degree as a predictor of quality (ECERS-R)
@@ -827,7 +827,7 @@ inits2 <- inits1
 
 library(R2jags) 
 q1m2.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 1000)
 ```
 
 ### Model 3: Highest degree as a predictor of receptive lang (PPVT)
@@ -980,7 +980,7 @@ inits2 <- inits1
 
 library(R2jags) 
 q1m3.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 1000)
 ```
 
 ### Model 4: Bachelors degree as a predictor of receptive lang (PPVT)
@@ -1122,7 +1122,7 @@ inits2 <- inits1
 
 library(R2jags) 
 q1m4.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 1000)
 ```
 
 ### Model 5: Highest degree as predictor of prereading (WJ1_SSEP)
@@ -1273,7 +1273,7 @@ inits2 <- inits1
 
 library(R2jags) 
 q1m5.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 1000)
 ```
 
 ### Model 6: Bachelors degree as predictor of prereading (WJ1_SSEP)
@@ -1412,7 +1412,7 @@ inits2 <- inits1
 
 library(R2jags) 
 q1m6.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 1000)
 ```
 
 ### Model 7: Highest degree as predictor of early math (WJ10_SSEP)
@@ -1563,7 +1563,7 @@ inits2 <- inits1
 
 library(R2jags) 
 q1m7.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 1000)
 ```
 
 ### Model 8: Bachelors degree as predictor of early math (WJ10_SSEP)
@@ -1702,7 +1702,7 @@ inits2 <- inits1
 
 library(R2jags) 
 q1m8.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 1000)
 ```
 
 ## Question 2
