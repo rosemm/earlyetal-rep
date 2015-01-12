@@ -1,0 +1,1724 @@
+# MethLab presentation: Bayes vs. Frequentist results in MLM
+
+# Early et al. (2007) replication.
+
+# Data Cleaning
+Data available [via ICPSR](http://www.icpsr.umich.edu/icpsrweb/ICPSR/studies/34877).
+
+```{r clean_data}
+# Note: to replicate these results exactly, set the random seed first. This will generate the same random numbers for the MI process and Bayesian models as I present here.
+set.seed(24601)
+
+# -----------------------------------
+# Get the data
+# -----------------------------------
+rm(list = ls())
+setwd("/Users/TARDIS/Documents/STUDIES")
+load("/Users/TARDIS/Documents/STUDIES/data/ICPSR_34877/DS0001/34877-0001-Data.rda") #classroom level data
+load("/Users/TARDIS/Documents/STUDIES/data/ICPSR_34877/DS0002/34877-0002-Data.rda") #child level data
+# -------------------------------------------------
+# get the vars
+# -------------------------------------------------
+## child-level
+### receptive vocab (DV): PPVT
+PPVT <- c("PPVTEPF", "PPVTEPS")
+### prereading (DV): letter-word identification from WJIII WJ1_SSEPF: WJIII ENG PK F LETTER-WORD ID STAND SCORE
+preread <- c("WJ1_SSEPF", "WJ1_SSEPS")
+### early math (DV): applied problems subtest of WJIII
+math <- c("WJ10_SSEPF", "WJ10_SSEPS")
+### controls
+l1controls <- c("STATE", "ICPSR_CLASS_ID", "CHGENP", "CHRACEP", "CHMATEDNP", "POORP")
+#### site/state
+#### gender CHGENP: PRESCHOOL: CHILD`S GENDER
+#### ethnicity CHRACEP: FAMQ: PK CHILD`S RACE (MutExCat)
+#### years maternal ed CHMATEDNP: FAMQ: PK Mat EDUCATION LEVEL (continuous)
+#### poverty/family income POORP: FAMQ: FAMILY INCOME AT OR BELOW 150% OF POVERTY?
+#### previous assessment score
+
+l1vars <- c(l1controls, PPVT, preread, math)
+child_data <- subset(da34877.0002, select=l1vars)
+
+## classroom level
+
+### teacher education
+TeachEd <- c("T_EDUCP", "TMAJORP")
+#### highest level T_EDUCP: TQ: PREK: TEACHERS EDUCATION LEVEL
+##### NOTE: coding system is different from Early et al. 2007
+#### major (early child ed, other ed, NA, missing) TMAJORP: TQ: PREK: TEACHERS MAJOR IN COLLEGE
+
+### classroom quality: ECERTOTP: ECERS-R: PREK: TOTAL (ITEMS 1-10,12-36) PK
+##### NOTE: numbers for these vars as reported in codebook do NOT match stats reported in Early et al. 2007
+ClassQual <- c("ECERTOTP")
+
+### controls
+l2controls <- c("STATE", "ICPSR_CLASS_ID", "RATIOPSP", "CLS_SIZEPF", "CLS_SIZEPS", "HOURSWKP", "T_RACEP", "WHITEP", "PERPOORP", "LOCATIONP", "FULLDAYP")
+#### site/state STATE: STATE IDENTIFIER; ICPSR_CLASS_ID: ICPSR CLASSROOM IDENTIFIER
+#### adult-to-child ratio RATIOPSP: ECERS-R: PREK: RATIO OF CHILDREN PRESENT TO STAFF PK
+#### class size CLS_SIZEPF: TQ: PREK: NUMBER OF STUDENTS IN OBSERVED CLASS FALL; CLS_SIZEPS: TQS: PREK: NUMBER OF STUDENTS IN OBS. CLASS SPRING
+##### NOTE: numbers for these vars as reported in codebook do NOT match stats reported in Early et al. 2007
+#### length of school day HOURSWKP: TQ: PREK: HOURS PER WEEK OF CLASS
+#### teacher ethnicity T_RACEP: TQ: PREK: TEACHER ETHNICITY MUTUALLY EXCLUSIVE CATEGORIES
+##### NOTE: numbers for these vars as reported in codebook do NOT match stats reported in Early et al. 2007
+#### proportion White students in class WHITEP: FAMQ: PREK: PROPORTION OF CLASS THAT IS: WHITE CHILDREN
+#### proportion poor students in class PERPOORP: FAMQ: PREK: CLASS PROPORTION THAT IS POOR (150% OF POVERTY LEVEL)
+#### program located in public school or not LOCATIONP: ADMQ/TQ: PREK: CLASS IS LOCATED IN A PUBLIC SCHOOL
+#### full-day program or not FULLDAYP: TQ: PREK: CLASS IS FOR A FULL DAY (1/0)
+l2vars <- c(l2controls, TeachEd, ClassQual)
+class_data <- subset(da34877.0001, select=l2vars)
+
+
+# -------------------------------------------------
+# recode, etc.
+# -------------------------------------------------
+library(plyr)
+class_data$ICPSR_CLASS_ID <- as.factor(class_data$ICPSR_CLASS_ID)
+child_data$ICPSR_CLASS_ID <- as.factor(child_data$ICPSR_CLASS_ID)
+class_data$Highest <- revalue(class_data$T_EDUCP, c("(1) HS Diploma + Training Certificate, HS Diploma, or Less"="HS", 
+                                                    "(2) Some college but no degree"="HS", 
+                                                    "(3) AA, AS, Two-Year Degree"="AS", 
+                                                    "(4) Bachelor's Degree"= "BA", 
+                                                    "(5) At least 1 Year past BA"="BA", 
+                                                    "(6) Master's Degree"="Grad", 
+                                                    "(7) Education Specialist, Professional Degree, Doctoral Degree, or Other"="Grad"))
+
+class_data$Major <- revalue(class_data$TMAJORP, c("(01) Early Childhood Education"="ECE_CD",
+                                                  "(02) Elementary Education"="OtherEd",
+                                                  "(03) Special Education"="OtherEd",
+                                                  "(04) English as a Second Language"="OtherEd",
+                                                  "(05) Child Development"="ECE_CD",
+                                                  "(06) N/A (No degree)"="NoDegree",
+                                                  "(07) Other"="OtherMajor",
+                                                  "(08) Other Education"="OtherEd",
+                                                  "(09) Psychology (Any)"="OtherMajor",
+                                                  "(10) Home Economics"="OtherMajor",
+                                                  "(11) Social Work/Human Services"="OtherMajor",
+                                                  "(12) Sociology"="OtherMajor",
+                                                  "(13) Reading"="OtherMajor"))
+# "The three categories were: (1) early childhood education or child development (ECE/CD), (2) any other education major, such as elementary or special education, and (3) non- education major, including any field outside of education such as psychology, sociology, biology, or business."
+# Note that majors are listed for some teachers with no degree (HS as highest level of education). 
+table(class_data[,c("Major", "Highest")], useNA="always") # should match numbers from Early et al. (2007) Table 2
+class_data$Major[class_data$Highest=="HS"] <- "NoDegree"
+
+class_data <- class_data[,-which(colnames(class_data) =="T_EDUCP")]
+class_data <- class_data[,-which(colnames(class_data) =="TMAJORP")]
+
+class_data$T_RACEP <- revalue(class_data$T_RACEP, c("(1) Latin American"="TLatino", 
+                                                    "(2) White"="TWhite", 
+                                                    "(3) African American, Asian, Native American, or Multiracial"="TOtherMultiracial")) 
+
+# In CLS_SIZEPS, some classrooms are coded as "-.99". Recode those as NA.
+class_data$CLS_SIZEPS[class_data$CLS_SIZEPS < 0] <- NA
+
+child_data$CHRACEP <- revalue(child_data$CHRACEP, c("(1) Latino"="ChLatino", 
+                                                    "(2) African American"="ChAfricanAmerican", 
+                                                    "(3) Native American"="ChOtherMultiracial", 
+                                                    "(4) Asian"="ChOtherMultiracial", 
+                                                    "(5) White"="ChWhite", 
+                                                    "(6) Multiracial"="ChOtherMultiracial"))
+# center child outcome measures from Fall (to be entered as control vars), to ease interpretation of coefs
+child_data$PPVTEPF <- scale(child_data$PPVTEPF, center=T, scale=F)
+child_data$WJ1_SSEPF <- scale(child_data$WJ1_SSEPF, center=T, scale=F)
+child_data$WJ10_SSEPF <- scale(child_data$WJ10_SSEPF, center=T, scale=F)
+
+# -------------------------------------------------
+# modify proportion variables to be able to be described by a beta dist
+# -------------------------------------------------
+summary(class_data)
+# beta is only defined BETWEEN 0 and 1, not inclusive
+# some observations for WHITEP and PERPOORP are = 1 or 0.
+# See http://sourceforge.net/p/mcmc-jags/discussion/610037/thread/0049650a/
+class_data$WHITEP <- (class_data$WHITEP * (nrow(class_data) - 1) + .5)/nrow(class_data)
+class_data$PERPOORP <- (class_data$PERPOORP * (nrow(class_data) - 1) + .5)/nrow(class_data)
+
+summary(class_data)
+
+# -------------------------------------------------
+# check data frames against Early et al. (2007) reported descriptives
+# -------------------------------------------------
+mean(class_data[,"ECERTOTP"], na.rm=TRUE)
+sd(class_data[,"ECERTOTP"], na.rm=TRUE)
+l1outcomes <- child_data[,c("PPVTEPF", "PPVTEPS", "WJ1_SSEPF", "WJ1_SSEPS", "WJ10_SSEPF", "WJ10_SSEPS")]
+colMeans(l1outcomes, na.rm = TRUE)
+sapply(l1outcomes, sd, na.rm=TRUE)
+# these descriptives match those reported in Early et al. (2007) Table 3
+
+l2controls <- class_data[,c("RATIOPSP", "CLS_SIZEPF", "CLS_SIZEPS", "HOURSWKP", "PERPOORP", "WHITEP", "T_RACEP", "LOCATIONP", "FULLDAYP")]
+colMeans(l2controls[,1:6], na.rm = TRUE)
+sapply(l2controls[,1:6], sd, na.rm=TRUE)
+summary(l2controls[,7:9])
+# class size is given as one variable in Early et al. (2007), and judging by descriptives in Table 4, they used CLS_SIZEPS  
+# teacher race (T_RACEP) doesn't quite match Early et al. (2007) because they have more categories than are available in the ICPSR dataset.
+class_data <- class_data[,-which(colnames(class_data) =="CLS_SIZEPF")]
+
+l1controls <- child_data[,c("CHGENP", "CHRACEP", "CHMATEDNP", "POORP")]
+summary(l1controls)
+# these descriptives match those reported in Early et al. (2007) Table 5.
+
+# -------------------------------------------------
+# merge l1 (child) and l2 (classroom) data into one data frame
+# -------------------------------------------------
+df <- merge(x=class_data, y=child_data, by="ICPSR_CLASS_ID", all.y=TRUE)
+# Note Early et al. (2007) list total N as 2966, but there are 2982 rows in df.
+which(is.na(df$ICPSR_CLASS_ID)) # the cases missing class ID (so it is impossible to link child level and classroom level data)
+df <- df[-which(is.na(df$ICPSR_CLASS_ID)),] # remove those cases from df
+dim(df)
+
+# STATE in child_data and class_data don't always agree (8 cases)
+table(df[,c("STATE.x", "STATE.y")], useNA="always")
+df$STATE <- df$STATE.x
+df$STATE[which(df$STATE.x != df$STATE.y)] <- NA # make STATE missing when there is disagreement between class level and child level data
+df <- subset(df, select=-c(STATE.x, STATE.y)) #remove extra state vars
+
+# some weirdness in the datafile...
+df$PPVTEPF <- as.numeric(df$PPVTEPF)
+df$WJ1_SSEPF <- as.numeric(df$WJ1_SSEPF)
+df$WJ10_SSEPF <- as.numeric(df$WJ10_SSEPF)
+df$ECERTOTP <- as.numeric(scale(df$ECERTOTP, center=TRUE, scale=FALSE))
+
+```
+
+# Frequentist Analyses
+
+Note to self: Not currently controlling for State, unclear in Early et. al (2007) whether analyses would have been 3-level MLM with state and site, or just by site or state. Right now, I'm analyzing a 2-level model by site for simplicity. 
+
+```{r freq_prep}
+# -----------------------------------
+# Frequentist Method
+# -----------------------------------
+library(lme4)
+library(mice)
+library(Amelia)
+library(gdata)
+library(VIM)
+
+# Multiple Imputation
+
+## check out the missingness:
+md.pattern(df) # shows the patterns of missingness in this dataset
+# marginplot(df[, c("WJ10_SSEPF", "WJ10_SSEPS")], 
+#            col=c("blue", "red", "orange"), 
+#            cex=1.5, cex.numbers=1.3, pch=19)
+
+# listing variables by type (used in amelia command)
+noms <- c("STATE", "T_RACEP", "LOCATIONP", "FULLDAYP", "Major", "CHGENP", "CHRACEP", "POORP", "Bachelors")
+ords <- "Highest"
+levels(df$Highest) # check that these are in the right order
+
+# exploring correlations, multicollinearity
+conts <- df[, -which(colnames(df) %in% noms)]
+conts <- conts[, -which(colnames(conts) %in% ords)]
+conts <- conts[,-1] #drop ICPSR CLASS ID col
+round(cor(conts, use="pairwise.complete.obs"), 2)
+heatmap(abs(cor(conts, use="pairwise.complete.obs")), symm=TRUE, Rowv=NA) # yellow is high correlation (max=.79), red is low (.0004)
+
+# make l1 dataset
+l1df <- df[,c("ICPSR_CLASS_ID", "CHGENP", "CHRACEP", "CHMATEDNP", "POORP", "PPVTEPF", "PPVTEPS", "WJ1_SSEPF", "WJ1_SSEPS", "WJ10_SSEPF", "WJ10_SSEPS", "FULLDAYP", "LOCATIONP", "Highest")] # note that FULLDAYP and LOCATIONP are included here because they are controls in the l1 models even though they're l2 vars. Highest and Bachelors are predictors.
+l1df$Bachelors <- as.factor(ifelse(as.numeric(l1df$Highest) > 2, 1, ifelse(as.numeric(l1df$Highest) < 3, 0, NA)))
+
+# make l2 dataset
+library(dplyr)
+group_df <- group_by(df, Highest, Major, T_RACEP, FULLDAYP, LOCATIONP, STATE, ICPSR_CLASS_ID)
+l2df <- summarise(group_df, 
+                  RATIOPSP = mean(RATIOPSP, na.rm=TRUE),
+                  CLS_SIZEPS = mean(CLS_SIZEPS, na.rm=TRUE),
+                  HOURSWKP = mean(HOURSWKP, na.rm=TRUE),
+                  WHITEP = mean(WHITEP, na.rm=TRUE),
+                  PERPOORP = mean(PERPOORP, na.rm=TRUE),
+                  ECERTOTP = mean(ECERTOTP, na.rm=TRUE))
+l2df$Bachelors <- as.factor(ifelse(as.numeric(l2df$Highest) > 2, 1, ifelse(as.numeric(l2df$Highest) < 3, 0, NA)))
+
+m <- 5 # the number of datasets to create
+l1.amelia.out <- amelia(l1df, m, idvars="ICPSR_CLASS_ID", noms = colnames(l1df)[colnames(l1df) %in% noms], ords="Highest")
+l2.amelia.out <- amelia(l2df, m, idvars="ICPSR_CLASS_ID", noms = colnames(l2df)[colnames(l2df) %in% noms], ords="Highest", lgstc = c("WHITEP", "PERPOORP"))
+# lgstc = a vector of numbers or names indicating columns in the data that should be transformed by a logistic function for proportional data. Data in this column must be between 0 and 1.
+# noms = a vector of numbers or names indicating columns in the data that are nominal variables.
+# ords = a vector of numbers or names indicating columns in the data that should be treated as ordinal variables.
+summary(l1.amelia.out)
+summary(l2.amelia.out)
+```
+
+## Question 1: Educational Degree as a predictor of quality and children's outcomes
+### Model 1: Highest degree as a predictor of quality (ECERS-R)
+
+```{r freq_q1m1}
+# Question 1: Educational Degree as a predictor of quality and children's outcomes
+## Model 1: Highest degree as a predictor of quality (ECERS-R)
+q1m1.b.out<-NULL
+q1m1.se.out<-NULL
+
+# L2 model
+for(i in 1:m) {
+  # run model
+  model <- lm(ECERTOTP ~ 0 + Highest + RATIOPSP + CLS_SIZEPS + HOURSWKP + T_RACEP + WHITEP + PERPOORP + LOCATIONP + FULLDAYP, data = l2.amelia.out$imputations[[i]])
+  q1m1.b.out <- rbind(q1m1.b.out, summary(model)$coef[,1])
+  q1m1.se.out <- rbind(q1m1.se.out, summary(model)$coef[,2])
+}
+q1m1.combined.results <- mi.meld(q = q1m1.b.out, se = q1m1.se.out)
+q1m1 <- data.frame(coef=q1m1.combined.results[[1]][1,],se=q1m1.combined.results[[2]][1,])
+q1m1$t <- q1m1$coef/q1m1$se
+q1m1[1:4,]
+```
+
+### Model 2: Bachelors degree as a predictor of quality (ECERS-R)
+
+```{r freq_q1m2}
+# Question 1: Educational Degree as a predictor of quality and children's outcomes
+## Model 2: Bachelors degree as a predictor of quality (ECERS-R)
+q1m2.b.out<-NULL
+q1m2.se.out<-NULL
+for(i in 1:m) {
+  model <- lm(ECERTOTP ~ 0 + Bachelors + RATIOPSP + CLS_SIZEPS + HOURSWKP + T_RACEP + WHITEP + PERPOORP + LOCATIONP + FULLDAYP, data = l2.amelia.out$imputations[[i]])
+  q1m2.b.out <- rbind(q1m2.b.out, summary(model)$coef[,1])
+  q1m2.se.out <- rbind(q1m2.se.out, summary(model)$coef[,2])
+}
+q1m2.combined.results <- mi.meld(q = q1m2.b.out, se = q1m2.se.out)
+q1m2 <- data.frame(coef=q1m2.combined.results[[1]][1,],se=q1m2.combined.results[[2]][1,])
+q1m2$t <- q1m2$coef/q1m2$se
+q1m2[1:2,]
+```
+
+### Model 3: Highest degree as a predictor of receptive lang (PPVT)
+
+```{r freq_q1m3}
+# Question 1: Educational Degree as a predictor of quality and children's outcomes
+## Model 3: Highest degree as a predictor of receptive lang (PPVT)
+
+# l1 model. See Early et al. (2007) Table 5 for control vars included in l1 models.
+q1m3.b.out<-NULL
+q1m3.se.out<-NULL
+for(i in 1:m) {
+  model <- lmer(PPVTEPS ~ 0 + Highest + PPVTEPF + LOCATIONP + FULLDAYP + CHGENP + CHRACEP + CHMATEDNP + POORP + (1 | ICPSR_CLASS_ID), 
+                   data = l1.amelia.out$imputations[[i]])
+  q1m3.b.out <- rbind(q1m3.b.out, summary(model)$coef[,1])
+  q1m3.se.out <- rbind(q1m3.se.out, summary(model)$coef[,2])
+}
+q1m3.combined.results <- mi.meld(q = q1m3.b.out, se = q1m3.se.out)
+q1m3 <- data.frame(coef=q1m3.combined.results[[1]][1,],se=q1m3.combined.results[[2]][1,])
+q1m3$t <- q1m3$coef/q1m3$se
+q1m3[1:4,]
+```
+
+### Model 4: Bachelors degree as a predictor of receptive lang (PPVT)
+
+```{r freq_q1m4}
+# Question 1: Educational Degree as a predictor of quality and children's outcomes
+## Model 4: Bachelors degree as a predictor of receptive lang (PPVT)
+
+# l1 model. See Early et al. (2007) Table 5 for control vars included in l1 models.
+q1m4.b.out<-NULL
+q1m4.se.out<-NULL
+for(i in 1:m) {
+  model <- lmer(PPVTEPS ~ 0 + Bachelors + PPVTEPF + LOCATIONP + FULLDAYP + CHGENP + CHRACEP + CHMATEDNP + POORP + (1 | ICPSR_CLASS_ID), 
+                   data = l1.amelia.out$imputations[[i]])
+  q1m4.b.out <- rbind(q1m4.b.out, summary(model)$coef[,1])
+  q1m4.se.out <- rbind(q1m4.se.out, summary(model)$coef[,2])
+}
+q1m4.combined.results <- mi.meld(q = q1m4.b.out, se = q1m4.se.out)
+q1m4 <- data.frame(coef=q1m4.combined.results[[1]][1,],se=q1m4.combined.results[[2]][1,])
+q1m4$t <- q1m4$coef/q1m4$se
+q1m4[1:2,]
+```
+
+### Model 5: Highest degree as predictor of prereading (WJ1_SSEP)
+
+```{r freq_q1m5}
+
+# l1 model. See Early et al. (2007) Table 5 for control vars included in l1 models.
+q1m5.b.out<-NULL
+q1m5.se.out<-NULL
+for(i in 1:m) {
+  model <- lmer(WJ1_SSEPS ~ 0 + Highest + WJ1_SSEPF + LOCATIONP + FULLDAYP + CHGENP + CHRACEP + CHMATEDNP + POORP + (1 | ICPSR_CLASS_ID), 
+                   data = l1.amelia.out$imputations[[i]])
+  q1m5.b.out <- rbind(q1m5.b.out, summary(model)$coef[,1])
+  q1m5.se.out <- rbind(q1m5.se.out, summary(model)$coef[,2])
+}
+q1m5.combined.results <- mi.meld(q = q1m5.b.out, se = q1m5.se.out)
+q1m5 <- data.frame(coef=q1m5.combined.results[[1]][1,],se=q1m5.combined.results[[2]][1,])
+q1m5$t <- q1m5$coef/q1m5$se
+q1m5[1:4,]
+```
+
+### Model 6: Bachelors degree as predictor of prereading (WJ1_SSEP)
+
+```{r freq_q1m6}
+
+# l1 model. See Early et al. (2007) Table 5 for control vars included in l1 models.
+q1m6.b.out<-NULL
+q1m6.se.out<-NULL
+for(i in 1:m) {
+  model <- lmer(WJ1_SSEPS ~ 0 + Bachelors + WJ1_SSEPF + LOCATIONP + FULLDAYP + CHGENP + CHRACEP + CHMATEDNP + POORP + (1 | ICPSR_CLASS_ID), 
+                   data = l1.amelia.out$imputations[[i]])
+  q1m6.b.out <- rbind(q1m6.b.out, summary(model)$coef[,1])
+  q1m6.se.out <- rbind(q1m6.se.out, summary(model)$coef[,2])
+}
+q1m6.combined.results <- mi.meld(q = q1m6.b.out, se = q1m6.se.out)
+q1m6 <- data.frame(coef=q1m6.combined.results[[1]][1,],se=q1m6.combined.results[[2]][1,])
+q1m6$t <- q1m6$coef/q1m6$se
+q1m6[1:2,]
+```
+
+### Model 7: Highest degree as predictor of early math (WJ10_SSEP)
+
+```{r freq_q1m7}
+# l1 model. See Early et al. (2007) Table 5 for control vars included in l1 models.
+q1m7.b.out<-NULL
+q1m7.se.out<-NULL
+for(i in 1:m) {
+  model <- lmer(WJ10_SSEPS ~ 0 + Highest + WJ10_SSEPF + LOCATIONP + FULLDAYP + CHGENP + CHRACEP + CHMATEDNP + POORP + (1 | ICPSR_CLASS_ID), 
+                   data = l1.amelia.out$imputations[[i]])
+  q1m7.b.out <- rbind(q1m7.b.out, summary(model)$coef[,1])
+  q1m7.se.out <- rbind(q1m7.se.out, summary(model)$coef[,2])
+}
+q1m7.combined.results <- mi.meld(q = q1m7.b.out, se = q1m7.se.out)
+q1m7 <- data.frame(coef=q1m7.combined.results[[1]][1,],se=q1m7.combined.results[[2]][1,])
+q1m7$t <- q1m7$coef/q1m7$se
+q1m7[1:4,]
+```
+
+### Model 8: Bachelors degree as predictor of early math (WJ10_SSEP)
+
+```{r freq_q1m8}
+# l1 model. See Early et al. (2007) Table 5 for control vars included in l1 models.
+q1m8.b.out<-NULL
+q1m8.se.out<-NULL
+for(i in 1:m) {
+  model <- lmer(WJ10_SSEPS ~ 0 + Bachelors + WJ10_SSEPF + LOCATIONP + FULLDAYP + CHGENP + CHRACEP + CHMATEDNP + POORP + (1 | ICPSR_CLASS_ID), 
+                   data = l1.amelia.out$imputations[[i]])
+  q1m8.b.out <- rbind(q1m8.b.out, summary(model)$coef[,1])
+  q1m8.se.out <- rbind(q1m8.se.out, summary(model)$coef[,2])
+}
+q1m8.combined.results <- mi.meld(q = q1m8.b.out, se = q1m8.se.out)
+q1m8 <- data.frame(coef=q1m8.combined.results[[1]][1,],se=q1m8.combined.results[[2]][1,])
+q1m8$t <- q1m8$coef/q1m8$se
+q1m8[1:2,]
+```
+
+## Question 2: Highest Education Level Among Teachers with ECE Major as a predictor of quality and children's outcomes
+### Model 1: Within ECE Majors, highest education level as a predictor of quality (ECERS-R)
+### Model 2: Within ECE Majors, highest education level as a predictor of vocab (PPVT)
+### Model 3: Within ECE Majors, highest education level as a predictor of prereading (WJ1_SSEP)
+### Model 4: Within ECE Majors, highest education level as a predictor of early math (WJ10_SSEP)
+
+
+## Question 3: Major as predictor of quality and child outcomes among teachers whose highest degree is BS
+### Model 1: Within BS, major as a predictor of quality (ECERS-R)
+### Model 2: Within BS, major as a predictor of vocab (PPVT)
+### Model 3: Within BS, major as a predictor of prereading (WJ1_SSEP)
+### Model 4: Within BS, major as a predictor of early math (WJ10_SSEP)
+
+
+
+# Bayesian Analyses
+
+```{r bayes_prep}
+# -----------------------------------
+# Bayesian Method
+# -----------------------------------
+# prep the data for JAGS
+jags.dat <- df[order(df$ICPSR_CLASS_ID), ] # order by L2 units (classroom ID).
+jags.dat <- jags.dat[, l1vars[3:12]] # selecting only the L1 vars to be used in the regressions (dropping STATE and ICPSR_CLASS_ID from l1vars)
+
+# jags chokes on factors. need to recode everything as 0-1 dummies
+# dummy code CHRACEP
+library(psych)
+jags.dat <- cbind(subset(jags.dat, select=-c(CHRACEP)), dummy.code(jags.dat$CHRACEP)[,-4]) # reference group for race is White
+jags.dat$CHGENP <- as.numeric(jags.dat$CHGENP) - 1
+jags.dat$POORP <- as.numeric(jags.dat$POORP) - 1
+df$CLASS <- as.numeric(as.ordered(df$ICPSR_CLASS_ID)) # save L2 unit counter. note that this must be numeric. 
+jags.dat$CLASS <- df$CLASS
+
+jags.dat <- as.list(jags.dat)
+
+str(jags.dat) 
+
+# L2 vars should be the length of the number of L2 units! I have 704 classrooms.
+jags.dat$RATIOPSP <- as.vector(by(as.numeric(df$RATIOPSP), df$CLASS, mean))
+jags.dat$CLS_SIZEPS <- as.vector(by(as.numeric(df$CLS_SIZEPS), df$CLASS, mean))
+jags.dat$HOURSWKP <- as.vector(by(as.numeric(df$HOURSWKP), df$CLASS, mean))
+jags.dat$WHITEP <- as.vector(by(as.numeric(df$WHITEP), df$CLASS, mean))
+jags.dat$PERPOORP <- as.vector(by(as.numeric(df$PERPOORP), df$CLASS, mean))
+jags.dat$LOCATIONP <- as.vector(by(as.numeric(df$LOCATIONP), df$CLASS, mean)) - 1
+jags.dat$FULLDAYP <- as.vector(by(as.numeric(df$FULLDAYP), df$CLASS, mean)) - 1
+jags.dat$ECERTOTP <- as.vector(by(as.numeric(df$ECERTOTP), df$CLASS, mean))
+
+# dummy code T_RACEP and Education vars (Major, Highest)
+T_RACEP.dummies <- dummy.code(df$T_RACEP)[,-2] # reference group is White
+Major.dummies <- dummy.code(df$Major) # No reference group (don't include intercept in model)
+Highest.dummies <- dummy.code(df$Highest) # No reference group (don't include intercept in model)
+df <- cbind(df, T_RACEP.dummies, Major.dummies, Highest.dummies)
+
+# note that dummy.code() treats NAs as 0, so need to reenter NAs
+df$TLatino <- ifelse(is.na(df$T_RACEP), NA, df$TLatino)
+df$TOtherMultiracial <- ifelse(is.na(df$T_RACEP), NA, df$TOtherMultiracial)
+df$OtherEd <- ifelse(is.na(df$Major), NA, df$OtherEd)
+df$NoDegree <- ifelse(is.na(df$Major), NA, df$NoDegree)
+df$OtherMajor <- ifelse(is.na(df$Major), NA, df$OtherMajor)
+df$ECE_CD <- ifelse(is.na(df$Major), NA, df$ECE_CD)
+df$HS <- ifelse(is.na(df$Highest), NA, df$HS)
+df$AS <- ifelse(is.na(df$Highest), NA, df$AS)
+df$BA <- ifelse(is.na(df$Highest), NA, df$BA)
+df$Grad <- ifelse(is.na(df$Highest), NA, df$Grad)
+
+# add dummy codes to jags list
+jags.dat$TLatino <- as.vector(by(as.numeric(df$TLatino), df$CLASS, mean))
+jags.dat$TOtherMultiracial <- as.vector(by(as.numeric(df$TOtherMultiracial), df$CLASS, mean))
+jags.dat$ECE_CD <- as.vector(by(as.numeric(df$ECE_CD), df$CLASS, mean))
+jags.dat$OtherEd <- as.vector(by(as.numeric(df$OtherEd), df$CLASS, mean))
+jags.dat$NoDegree <- as.vector(by(as.numeric(df$NoDegree), df$CLASS, mean))
+jags.dat$OtherMajor <- as.vector(by(as.numeric(df$OtherMajor), df$CLASS, mean))
+jags.dat$HS <- as.vector(by(as.numeric(df$HS), df$CLASS, mean))
+jags.dat$AS <- as.vector(by(as.numeric(df$AS), df$CLASS, mean))
+jags.dat$BA <- as.vector(by(as.numeric(df$BA), df$CLASS, mean))
+jags.dat$Grad <- as.vector(by(as.numeric(df$Grad), df$CLASS, mean))
+# add Bachelors
+jags.dat$BachelorsY <- ifelse(jags.dat$HS==1, 0, ifelse(jags.dat$AS==1, 0, ifelse(jags.dat$BA==1,1, ifelse(jags.dat$Grad==1, 1, NA))))
+jags.dat$BachelorsN <- ifelse(jags.dat$BachelorsY==0, 1, ifelse(jags.dat$BachelorsY==1,0, NA))
+
+# need to add L1 n, and L2 n
+jags.dat$N.child <- nrow(df)
+jags.dat$N.class <- length(unique(df$ICPSR_CLASS_ID))
+
+# check out the structure of the data file
+str(jags.dat)
+
+
+# -------------------------------------------------
+# prep for multiple imputation in JAGS
+# -------------------------------------------------
+
+# notes re: missing data
+# One could argue: the steps of MI are built into the Bayesian model (Bakker & Armstrong 2010, Bakker, Armstrong & Karreth n.d.)
+# Assuming that the missing data on our predictors are MCAR (implementing MAR is still too confusing for me now)
+# To determine appropriate priors for predictors based on values in available data
+
+# for the normal dist
+mean.PPVTEPF <- mean(jags.dat$PPVTEPF, na.rm=TRUE)
+prec.PPVTEPF <- 1/var(jags.dat$PPVTEPF, na.rm=TRUE)
+jags.dat$params.PPVTEPF <- c(mean.PPVTEPF, prec.PPVTEPF)
+mean.WJ1_SSEPF <- mean(jags.dat$WJ1_SSEPF, na.rm=TRUE)
+prec.WJ1_SSEPF <- 1/var(jags.dat$WJ1_SSEPF, na.rm=TRUE)
+jags.dat$params.WJ1_SSEPF <- c(mean.WJ1_SSEPF, prec.WJ1_SSEPF)
+mean.WJ10_SSEPF <- mean(jags.dat$WJ10_SSEPF, na.rm=TRUE)
+prec.WJ10_SSEPF <- 1/var(jags.dat$WJ10_SSEPF, na.rm=TRUE)
+jags.dat$params.WJ10_SSEPF <- c(mean.WJ10_SSEPF, prec.WJ10_SSEPF)
+
+mean.CHMATEDNP <- mean(jags.dat$CHMATEDNP, na.rm=TRUE)
+prec.CHMATEDNP <- 1/var(jags.dat$CHMATEDNP, na.rm=TRUE)
+jags.dat$params.CHMATEDNP <- c(mean.CHMATEDNP, prec.CHMATEDNP)
+
+
+# for the beta dists
+library(LearnBayes)
+quantiles.WHITEP <- quantile(jags.dat$WHITEP, probs=c(.5,.9), na.rm=TRUE)
+quantile1=list(p=.5,x=quantiles.WHITEP[[1]])
+quantile2=list(p=.9,x=quantiles.WHITEP[[2]])
+jags.dat$params.WHITEP <- beta.select(quantile1,quantile2) # add these parameter values to the jags.dat object so they're available in the model
+
+quantiles.PERPOORP <- quantile(jags.dat$PERPOORP, probs=c(.5,.25), na.rm=TRUE)
+quantile1=list(p=.5,x=quantiles.PERPOORP[[1]])
+quantile2=list(p=.25,x=quantiles.PERPOORP[[2]])
+jags.dat$params.PERPOORP <- beta.select(quantile1,quantile2)
+
+# for the bernouli dists
+jags.dat$param.CHGENP <- mean(jags.dat$CHGENP, na.rm=TRUE)
+jags.dat$param.POORP <- mean(jags.dat$POORP, na.rm=TRUE)
+jags.dat$param.ChLatino <- mean(jags.dat$ChLatino, na.rm=TRUE)
+jags.dat$param.ChAfricanAmerican <- mean(jags.dat$ChAfricanAmerican, na.rm=TRUE)
+jags.dat$param.ChOtherMultiracial <- mean(jags.dat$ChOtherMultiracial, na.rm=TRUE)
+jags.dat$param.LOCATIONP <- mean(jags.dat$LOCATIONP, na.rm=TRUE)
+jags.dat$param.FULLDAYP <- mean(jags.dat$FULLDAYP, na.rm=TRUE)
+jags.dat$param.TLatino <- mean(jags.dat$TLatino, na.rm=TRUE)
+jags.dat$param.TOtherMultiracial <- mean(jags.dat$TOtherMultiracial, na.rm=TRUE)
+jags.dat$param.ECE_CD <- mean(jags.dat$ECE_CD, na.rm=TRUE)
+jags.dat$param.OtherEd <- mean(jags.dat$OtherEd, na.rm=TRUE)
+jags.dat$param.NoDegree <- mean(jags.dat$NoDegree, na.rm=TRUE)
+jags.dat$param.OtherMajor <- mean(jags.dat$OtherMajor, na.rm=TRUE)
+jags.dat$param.HS <- mean(jags.dat$HS, na.rm=TRUE)
+jags.dat$param.AS <- mean(jags.dat$AS, na.rm=TRUE)
+jags.dat$param.BA <- mean(jags.dat$BA, na.rm=TRUE)
+jags.dat$param.Grad <- mean(jags.dat$Grad, na.rm=TRUE)
+jags.dat$param.BachelorsY <- mean(jags.dat$BachelorsY, na.rm=TRUE)
+jags.dat$param.BachelorsN <- mean(jags.dat$BachelorsN, na.rm=TRUE)
+
+# for the gamma dists
+library(psych)
+# dgamma(r, lambda)
+# skew = 2/sqrt(abs(r))
+# r =(2/skew)^2
+# mean = r/lambda
+# lambda = r/mean
+skew.RATIOPSP <- skew(jags.dat$RATIOPSP, na.rm=TRUE)
+mean.RATIOPSP <- mean(jags.dat$RATIOPSP, na.rm=TRUE)
+jags.dat$params.RATIOPSP <- c((2/skew.RATIOPSP)^2, ((2/skew.RATIOPSP)^2)/mean.RATIOPSP)
+skew.CLS_SIZEPS <- skew(jags.dat$CLS_SIZEPS, na.rm=TRUE)
+mean.CLS_SIZEPS <- mean(jags.dat$CLS_SIZEPS, na.rm=TRUE)
+jags.dat$params.CLS_SIZEPS <- c((2/skew.CLS_SIZEPS)^2, ((2/skew.CLS_SIZEPS)^2)/mean.CLS_SIZEPS)
+skew.HOURSWKP <- skew(jags.dat$HOURSWKP, na.rm=TRUE)
+mean.HOURSWKP <- mean(jags.dat$HOURSWKP, na.rm=TRUE)
+jags.dat$params.HOURSWKP <- c((2/skew.HOURSWKP)^2, ((2/skew.HOURSWKP)^2)/mean.HOURSWKP)
+```
+
+## Question 1: Educational Degree as a predictor of quality and children's outcomes
+
+### Model 1: Highest degree as a predictor of quality (ECERS-R)
+
+```{r bayes_q1m1}
+# Question 1: Educational Degree as a predictor of quality and children's outcomes
+## Model 1: Highest degree as a predictor of quality (ECERS-R)
+
+# -------------------------------------------------
+# write the jags model
+# -------------------------------------------------
+
+jags.model <- function(){
+  for (j in 1:N.class){
+    ECERTOTP[j] ~ dnorm (mu[j], tau)
+    mu[j] <-
+      b.RATIOPSP * RATIOPSP[j] + 
+      b.CLS_SIZEPS * CLS_SIZEPS[j] + 
+      b.HOURSWKP * HOURSWKP[j] + 
+      b.WHITEP * WHITEP[j] + 
+      b.PERPOORP * PERPOORP[j] + 
+      b.LOCATIONP * LOCATIONP[j] + 
+      b.FULLDAYP * FULLDAYP[j] + 
+      # teacher race
+      b.TLatino * TLatino[j] +
+      b.TOtherMultiracial * TOtherMultiracial[j] +
+      # teacher Highest degree (all four codes because model has no intercept)
+      b.HS * HS[j] +
+      b.AS * AS[j] +
+      b.BA * BA[j] +
+      b.Grad * Grad[j]
+    }
+  
+  for (j in 1:N.class){    
+      # priors on L2 predictors, for multiple imputation
+      RATIOPSP[j] ~  dgamma(params.RATIOPSP[1], params.RATIOPSP[2])# min=1.5 max=27, must be positive 
+      CLS_SIZEPS[j] ~  dgamma(params.CLS_SIZEPS[1], params.CLS_SIZEPS[2])# min=4, max=56, must be positive
+      HOURSWKP[j] ~ dgamma(params.HOURSWKP[1], params.HOURSWKP[2]) # min=6.5, max=60, must be positive
+      WHITEP[j] ~ dbeta(params.WHITEP[1], params.WHITEP[2]) # bounded between 0 and 1
+      PERPOORP[j] ~ dbeta(params.PERPOORP[1], params.PERPOORP[2]) # bounded between 0 and 1
+      LOCATIONP[j] ~ dbern(param.LOCATIONP) # 0 or 1
+      FULLDAYP[j] ~ dbern(param.FULLDAYP) # 0 or 1
+      # teacher race
+      TLatino[j] ~ dbern(param.TLatino) # 0 or 1
+      TOtherMultiracial[j] ~ dbern(param.TOtherMultiracial) # 0 or 1
+      # teacher highest degree
+      HS[j] ~ dbern(param.HS) # 0 or 1
+      AS[j] ~ dbern(param.AS) # 0 or 1
+      BA[j] ~ dbern(param.BA) # 0 or 1
+      Grad[j] ~ dbern(param.Grad) # 0 or 1
+  }
+  # priors on coefficients
+  b.RATIOPSP ~ dnorm(0,.01)
+  b.CLS_SIZEPS ~ dnorm(0,.01)
+  b.HOURSWKP ~ dnorm(0,.01)
+  b.WHITEP ~ dnorm(0,.01)
+  b.PERPOORP ~ dnorm(0,.01)
+  b.LOCATIONP ~ dnorm(0,.01)
+  b.FULLDAYP ~ dnorm(0,.01)
+  # teacher race
+  b.TLatino  ~ dnorm(0,.01)
+  b.TOtherMultiracial ~ dnorm(0,.01)
+  # teacher highest degree
+  b.HS ~ dnorm(0,.01)
+  b.AS ~ dnorm(0,.01)
+  b.BA ~ dnorm(0,.01)
+  b.Grad ~ dnorm(0,.01)
+
+  tau ~ dgamma(1,1)
+}
+
+# -------------------------------------------------
+# set the parameters to track
+# -------------------------------------------------
+params <- c("b.RATIOPSP", "b.CLS_SIZEPS", "b.HOURSWKP", "b.WHITEP", "b.PERPOORP", "b.LOCATIONP", "b.FULLDAYP", 
+            "b.TLatino", "b.TOtherMultiracial", "b.HS", "b.AS", "b.BA", "b.Grad",
+            "tau" )
+
+# -------------------------------------------------
+# specify the inits
+# -------------------------------------------------
+
+# special inits for predictors with missing values (must specify if it's missing, must leave as NA if it's available)
+
+#inits for L2 predictors
+RATIOPSP.inits <- jags.dat$RATIOPSP
+CLS_SIZEPS.inits <- jags.dat$CLS_SIZEPS
+HOURSWKP.inits <- jags.dat$HOURSWKP
+WHITEP.inits <- jags.dat$WHITEP
+PERPOORP.inits <- jags.dat$PERPOORP
+LOCATIONP.inits <- jags.dat$LOCATIONP
+FULLDAYP.inits <- jags.dat$FULLDAYP
+TLatino.inits <- jags.dat$TLatino
+TOtherMultiracial.inits <- jags.dat$TOtherMultiracial
+HS.inits <- jags.dat$HS
+AS.inits <- jags.dat$AS
+BA.inits <- jags.dat$BA
+Grad.inits <- jags.dat$Grad
+
+# replace with reasonable inits for missing values
+RATIOPSP.inits[is.na(jags.dat$RATIOPSP)] <- 8
+CLS_SIZEPS.inits[is.na(jags.dat$CLS_SIZEPS)] <- 20
+HOURSWKP.inits[is.na(jags.dat$HOURSWKP)] <- 30
+WHITEP.inits[is.na(jags.dat$WHITEP)] <- .5
+PERPOORP.inits[is.na(jags.dat$PERPOORP)] <- .5
+LOCATIONP.inits[is.na(jags.dat$LOCATIONP)] <- 0
+FULLDAYP.inits[is.na(jags.dat$FULLDAYP)] <- 0
+TLatino.inits[is.na(jags.dat$TLatino)] <- 0
+TOtherMultiracial.inits[is.na(jags.dat$TOtherMultiracial)] <- 0
+HS.inits[is.na(jags.dat$HS)] <- 0
+AS.inits[is.na(jags.dat$AS)] <- 0
+BA.inits[is.na(jags.dat$BA)] <- 0
+Grad.inits[is.na(jags.dat$Grad)] <- 0
+
+# set init=NA for all observed cases
+RATIOPSP.inits[!is.na(jags.dat$RATIOPSP)] <- NA
+CLS_SIZEPS.inits[!is.na(jags.dat$CLS_SIZEPS)] <- NA
+HOURSWKP.inits[!is.na(jags.dat$HOURSWKP)] <- NA
+WHITEP.inits[!is.na(jags.dat$WHITEP)] <- NA
+PERPOORP.inits[!is.na(jags.dat$PERPOORP)] <- NA
+LOCATIONP.inits[!is.na(jags.dat$LOCATIONP)] <- NA
+FULLDAYP.inits[!is.na(jags.dat$FULLDAYP)] <- NA
+TLatino.inits[!is.na(jags.dat$TLatino)] <- NA
+TOtherMultiracial.inits[!is.na(jags.dat$TOtherMultiracial)] <- NA
+HS.inits[!is.na(jags.dat$HS)] <- NA
+AS.inits[!is.na(jags.dat$AS)] <- NA
+BA.inits[!is.na(jags.dat$BA)] <- NA
+Grad.inits[!is.na(jags.dat$Grad)] <- NA
+
+# the inits lists are the same, I just need two of them since there are 2 chains
+inits1 <- list(tau= 1, b.RATIOPSP=0, b.CLS_SIZEPS=0, b.HOURSWKP=0, b.WHITEP=0, b.PERPOORP=0, b.LOCATIONP=0, b.FULLDAYP=0, b.TLatino=0, b.TOtherMultiracial=0, b.HS=0, b.AS=0, b.BA=0, b.Grad=0, 
+  RATIOPSP=RATIOPSP.inits, CLS_SIZEPS=CLS_SIZEPS.inits, HOURSWKP=HOURSWKP.inits, WHITEP=WHITEP.inits, PERPOORP=PERPOORP.inits, LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, TLatino=TLatino.inits, TOtherMultiracial=TOtherMultiracial.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
+
+inits2 <- inits1
+
+# -------------------------------------------------
+# run the model
+# -------------------------------------------------
+
+library(R2jags) 
+# set.seed(24601)
+q1m1.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+```
+
+### Model 2: Bachelors degree as a predictor of quality (ECERS-R)
+
+```{r bayes_q1m2}
+# Question 1: Educational Degree as a predictor of quality and children's outcomes
+## Model 2: Bachelors degree as a predictor of quality (ECERS-R)
+# -------------------------------------------------
+# write the jags model
+# -------------------------------------------------
+jags.model <- function(){
+  for (j in 1:N.class){
+    ECERTOTP[j] ~ dnorm (mu[j], tau)
+    mu[j] <-
+      b.RATIOPSP * RATIOPSP[j] + 
+      b.CLS_SIZEPS * CLS_SIZEPS[j] + 
+      b.HOURSWKP * HOURSWKP[j] + 
+      b.WHITEP * WHITEP[j] + 
+      b.PERPOORP * PERPOORP[j] + 
+      b.LOCATIONP * LOCATIONP[j] + 
+      b.FULLDAYP * FULLDAYP[j] + 
+      # teacher race
+      b.TLatino * TLatino[j] +
+      b.TOtherMultiracial * TOtherMultiracial[j] +
+      # teacher has at least BA? (both codes because no intercept in the model)
+      b.BachelorsY * BachelorsY[j] + 
+      b.BachelorsN * BachelorsN[j]
+    }
+  
+  for (j in 1:N.class){    
+      # priors on L2 predictors, for multiple imputation
+      RATIOPSP[j] ~  dgamma(params.RATIOPSP[1], params.RATIOPSP[2])# min=1.5 max=27, must be positive 
+      CLS_SIZEPS[j] ~  dgamma(params.CLS_SIZEPS[1], params.CLS_SIZEPS[2])# min=4, max=56, must be positive
+      HOURSWKP[j] ~ dgamma(params.HOURSWKP[1], params.HOURSWKP[2]) # min=6.5, max=60, must be positive
+      WHITEP[j] ~ dbeta(params.WHITEP[1], params.WHITEP[2]) # bounded between 0 and 1
+      PERPOORP[j] ~ dbeta(params.PERPOORP[1], params.PERPOORP[2]) # bounded between 0 and 1
+      LOCATIONP[j] ~ dbern(param.LOCATIONP) # 0 or 1
+      FULLDAYP[j] ~ dbern(param.FULLDAYP) # 0 or 1
+      # teacher race
+      TLatino[j] ~ dbern(param.TLatino) # 0 or 1
+      TOtherMultiracial[j] ~ dbern(param.TOtherMultiracial) # 0 or 1
+      # teacher degree
+      BachelorsY[j] ~ dbern(param.BachelorsY) # 0 or 1
+      BachelorsN[j] ~ dbern(param.BachelorsN) # 0 or 1
+  }
+  # priors on coefficients
+  b.RATIOPSP ~ dnorm(0,.01)
+  b.CLS_SIZEPS ~ dnorm(0,.01)
+  b.HOURSWKP ~ dnorm(0,.01)
+  b.WHITEP ~ dnorm(0,.01)
+  b.PERPOORP ~ dnorm(0,.01)
+  b.LOCATIONP ~ dnorm(0,.01)
+  b.FULLDAYP ~ dnorm(0,.01)
+  # teacher race
+  b.TLatino  ~ dnorm(0,.01)
+  b.TOtherMultiracial ~ dnorm(0,.01)
+  # teacher highest degree
+  b.BachelorsY ~ dnorm(0,.01)
+  b.BachelorsN ~ dnorm(0,.01)
+
+  tau ~ dgamma(1,1)
+}
+
+# -------------------------------------------------
+# set the parameters to track
+# -------------------------------------------------
+params <- c("b.RATIOPSP", "b.CLS_SIZEPS", "b.HOURSWKP", "b.WHITEP", "b.PERPOORP", "b.LOCATIONP", "b.FULLDAYP", 
+            "b.TLatino", "b.TOtherMultiracial", "b.BachelorsY", "b.BachelorsN",
+            "tau" )
+
+# -------------------------------------------------
+# specify the inits
+# -------------------------------------------------
+
+# special inits for predictors with missing values (must specify if it's missing, must leave as NA if it's available)
+
+#inits for L2 predictors
+RATIOPSP.inits <- jags.dat$RATIOPSP
+CLS_SIZEPS.inits <- jags.dat$CLS_SIZEPS
+HOURSWKP.inits <- jags.dat$HOURSWKP
+WHITEP.inits <- jags.dat$WHITEP
+PERPOORP.inits <- jags.dat$PERPOORP
+LOCATIONP.inits <- jags.dat$LOCATIONP
+FULLDAYP.inits <- jags.dat$FULLDAYP
+TLatino.inits <- jags.dat$TLatino
+TOtherMultiracial.inits <- jags.dat$TOtherMultiracial
+BachelorsY.inits <- jags.dat$BachelorsY
+BachelorsN.inits <- jags.dat$BachelorsN
+
+# replace with reasonable inits for missing values
+RATIOPSP.inits[is.na(jags.dat$RATIOPSP)] <- 8
+CLS_SIZEPS.inits[is.na(jags.dat$CLS_SIZEPS)] <- 20
+HOURSWKP.inits[is.na(jags.dat$HOURSWKP)] <- 30
+WHITEP.inits[is.na(jags.dat$WHITEP)] <- .5
+PERPOORP.inits[is.na(jags.dat$PERPOORP)] <- .5
+LOCATIONP.inits[is.na(jags.dat$LOCATIONP)] <- 0
+FULLDAYP.inits[is.na(jags.dat$FULLDAYP)] <- 0
+TLatino.inits[is.na(jags.dat$TLatino)] <- 0
+TOtherMultiracial.inits[is.na(jags.dat$TOtherMultiracial)] <- 0
+BachelorsY.inits[is.na(jags.dat$BachelorsY)] <- 0
+BachelorsN.inits[is.na(jags.dat$BachelorsN)] <- 0
+
+# set init=NA for all observed cases
+RATIOPSP.inits[!is.na(jags.dat$RATIOPSP)] <- NA
+CLS_SIZEPS.inits[!is.na(jags.dat$CLS_SIZEPS)] <- NA
+HOURSWKP.inits[!is.na(jags.dat$HOURSWKP)] <- NA
+WHITEP.inits[!is.na(jags.dat$WHITEP)] <- NA
+PERPOORP.inits[!is.na(jags.dat$PERPOORP)] <- NA
+LOCATIONP.inits[!is.na(jags.dat$LOCATIONP)] <- NA
+FULLDAYP.inits[!is.na(jags.dat$FULLDAYP)] <- NA
+TLatino.inits[!is.na(jags.dat$TLatino)] <- NA
+TOtherMultiracial.inits[!is.na(jags.dat$TOtherMultiracial)] <- NA
+BachelorsY.inits[!is.na(jags.dat$BachelorsY)] <- NA
+BachelorsN.inits[!is.na(jags.dat$BachelorsN)] <- NA
+
+# the inits lists are the same, I just need two of them since there are 2 chains
+inits1 <- list(tau= 1, b.RATIOPSP=0, b.CLS_SIZEPS=0, b.HOURSWKP=0, b.WHITEP=0, b.PERPOORP=0, b.LOCATIONP=0, b.FULLDAYP=0, b.TLatino=0, b.TOtherMultiracial=0, b.BachelorsY=0, b.BachelorsN=0,
+  RATIOPSP=RATIOPSP.inits, CLS_SIZEPS=CLS_SIZEPS.inits, HOURSWKP=HOURSWKP.inits, WHITEP=WHITEP.inits, PERPOORP=PERPOORP.inits, LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, TLatino=TLatino.inits, TOtherMultiracial=TOtherMultiracial.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
+
+inits2 <- inits1
+
+# -------------------------------------------------
+# run the model
+# -------------------------------------------------
+
+library(R2jags) 
+# set.seed(24601)
+q1m2.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+```
+
+### Model 3: Highest degree as a predictor of receptive lang (PPVT)
+```{r bayes_q1m3}
+# Question 1: Educational Degree as a predictor of quality and children's outcomes
+## Model 3: Highest degree as a predictor of receptive lang (PPVT)
+
+# -------------------------------------------------
+# write the jags model
+# -------------------------------------------------
+
+jags.model <- function(){
+  for (i in 1:N.child){
+    PPVTEPS[i] ~ dnorm (mu[i], tau)
+    mu[i] <- b.class[CLASS[i]] + 
+      b.PPVTEPF * PPVTEPF[i] + 
+      b.CHGENP * CHGENP[i] + 
+      b.CHMATEDNP * CHMATEDNP[i] + 
+      b.POORP * POORP[i] +
+      b.ChLatino * ChLatino[i] +
+      b.ChAfricanAmerican * ChAfricanAmerican[i] +
+      b.ChOtherMultiracial * ChOtherMultiracial[i] 
+    }
+  for (i in 1:N.child){
+      # priors on L1 predictors, for multiple imputation
+      PPVTEPF[i] ~ dnorm(params.PPVTEPF[1], params.PPVTEPF[2]) # min=-62, max=42
+      CHMATEDNP[i] ~ dnorm(params.CHMATEDNP[1], params.CHMATEDNP[2]) # min=-62, max=42
+      CHGENP[i] ~ dbern(param.CHGENP) # 0 or 1
+      POORP[i] ~ dbern(param.POORP) # 0 or 1
+      ChLatino[i] ~ dbern(param.ChLatino) # 0 or 1
+      ChAfricanAmerican[i] ~ dbern(param.ChAfricanAmerican) # 0 or 1
+      ChOtherMultiracial[i] ~ dbern(param.ChOtherMultiracial) # 0 or 1     
+  }
+  b.PPVTEPF ~ dnorm(0, 0.01)
+  b.CHGENP ~ dnorm(0, 0.01) 
+  b.POORP ~ dnorm (0, 0.01)
+  b.CHMATEDNP ~ dnorm (0, 0.01)
+  b.ChLatino ~ dnorm(0, 0.01)
+  b.ChAfricanAmerican ~ dnorm(0, 0.01)
+  b.ChOtherMultiracial ~ dnorm(0, 0.01) 
+
+  for (j in 1:N.class){
+    b.class[j] ~ dnorm(b.class.hat[j], tau.class)
+    b.class.hat[j] <- 
+      b.LOCATIONP * LOCATIONP[j] + 
+      b.FULLDAYP * FULLDAYP[j] + 
+      b.HS * HS[j] +
+      b.AS * AS[j] +
+      b.BA * BA[j] +
+      b.Grad * Grad[j]
+    }
+  for (j in 1:N.class){    
+      # priors on L2 predictors, for multiple imputation
+      LOCATIONP[j] ~ dbern(param.LOCATIONP) # 0 or 1
+      FULLDAYP[j] ~ dbern(param.FULLDAYP) # 0 or 1
+      HS[j] ~ dbern(param.HS) # 0 or 1
+      AS[j] ~ dbern(param.AS) # 0 or 1
+      BA[j] ~ dbern(param.BA) # 0 or 1
+      Grad[j] ~ dbern(param.Grad) # 0 or 1
+  }
+  
+  b.class.hat.mu <- mean(b.class.hat[])
+  
+  b.class0 ~ dnorm(0,.01)
+  b.LOCATIONP ~ dnorm(0,.01)
+  b.FULLDAYP ~ dnorm(0,.01)
+  b.HS ~ dnorm(0,.01)
+  b.AS ~ dnorm(0,.01)
+  b.BA ~ dnorm(0,.01)
+  b.Grad ~ dnorm(0,.01)
+  
+  tau ~ dgamma(1,1)
+  tau.class ~ dgamma(1,1)
+}
+
+# -------------------------------------------------
+# set the parameters to track
+# -------------------------------------------------
+params <- c("b.PPVTEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
+            "b.LOCATIONP", "b.FULLDAYP", "b.HS", "b.AS", "b.BA", "b.Grad",
+            "b.class0" )
+
+# -------------------------------------------------
+# specify the inits
+# -------------------------------------------------
+
+# special inits for predictors with missing values (must specify if it's missing, must leave as NA if it's available)
+# inits for L1 predictors
+PPVTEPF.inits <- jags.dat$PPVTEPF
+CHGENP.inits <- jags.dat$CHGENP
+POORP.inits <- jags.dat$POORP
+ChLatino.inits <- jags.dat$ChLatino
+ChAfricanAmerican.inits <- jags.dat$ChAfricanAmerican
+ChOtherMultiracial.inits <- jags.dat$ChOtherMultiracial
+CHMATEDNP.inits <- jags.dat$CHMATEDNP
+
+# replace with reasonable inits for missing values
+PPVTEPF.inits[is.na(jags.dat$PPVTEPF)] <- 0
+CHGENP.inits[is.na(jags.dat$CHGENP)] <- 0
+POORP.inits[is.na(jags.dat$POORP)] <- 0
+ChLatino.inits[is.na(jags.dat$ChLatino)] <- 0
+ChAfricanAmerican.inits[is.na(jags.dat$ChAfricanAmerican)] <- 0
+ChOtherMultiracial.inits[is.na(jags.dat$ChOtherMultiracial)] <- 0
+CHMATEDNP.inits[is.na(jags.dat$CHMATEDNP)] <- 0
+
+# set init=NA for all observed cases
+PPVTEPF.inits[!is.na(jags.dat$PPVTEPF)] <- NA
+CHGENP.inits[!is.na(jags.dat$CHGENP)] <- NA
+POORP.inits[!is.na(jags.dat$POORP)] <- NA
+ChLatino.inits[!is.na(jags.dat$ChLatino)] <- NA
+ChAfricanAmerican.inits[!is.na(jags.dat$ChAfricanAmerican)] <- NA
+ChOtherMultiracial.inits[!is.na(jags.dat$ChOtherMultiracial)] <- NA
+CHMATEDNP.inits[!is.na(jags.dat$CHMATEDNP)] <- NA
+
+
+#inits for L2 predictors
+LOCATIONP.inits <- jags.dat$LOCATIONP
+FULLDAYP.inits <- jags.dat$FULLDAYP
+HS.inits <- jags.dat$HS
+AS.inits <- jags.dat$AS
+BA.inits <- jags.dat$BA
+Grad.inits <- jags.dat$Grad
+
+# replace with reasonable inits for missing values
+LOCATIONP.inits[is.na(jags.dat$LOCATIONP)] <- 0
+FULLDAYP.inits[is.na(jags.dat$FULLDAYP)] <- 0
+HS.inits[is.na(jags.dat$HS)] <- 0
+AS.inits[is.na(jags.dat$AS)] <- 0
+BA.inits[is.na(jags.dat$BA)] <- 0
+Grad.inits[is.na(jags.dat$Grad)] <- 0
+
+# set init=NA for all observed cases
+LOCATIONP.inits[!is.na(jags.dat$LOCATIONP)] <- NA
+FULLDAYP.inits[!is.na(jags.dat$FULLDAYP)] <- NA
+HS.inits[!is.na(jags.dat$HS)] <- NA
+AS.inits[!is.na(jags.dat$AS)] <- NA
+BA.inits[!is.na(jags.dat$BA)] <- NA
+Grad.inits[!is.na(jags.dat$Grad)] <- NA
+
+# the inits lists are the same, I just need two of them since there are 2 chains
+inits1 <-list(tau= 1, tau.class=1, b.PPVTEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLatino=0, b.ChAfricanAmerican=0, b.ChOtherMultiracial=0, b.CHMATEDNP=0, 
+              b.class0=0, b.LOCATIONP=0, b.FULLDAYP=0, b.HS=0, b.AS=0, b.BA=0, b.Grad=0, 
+              PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
+inits2 <- inits1
+
+# -------------------------------------------------
+# run the model
+# -------------------------------------------------
+
+library(R2jags) 
+# set.seed(123)
+q1m3.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+```
+
+### Model 4: Bachelors degree as a predictor of receptive lang (PPVT)
+
+```{r bayes_q1m4}
+# Question 1: Educational Degree as a predictor of quality and children's outcomes
+## Model 4: Bachelors degree as a predictor of receptive lang (PPVT)
+
+# -------------------------------------------------
+# write the jags model
+# -------------------------------------------------
+
+jags.model <- function(){
+  for (i in 1:N.child){
+    PPVTEPS[i] ~ dnorm (mu[i], tau)
+    mu[i] <- b.class[CLASS[i]] + 
+      b.PPVTEPF * PPVTEPF[i] + 
+      b.CHGENP * CHGENP[i] + 
+      b.CHMATEDNP * CHMATEDNP[i] + 
+      b.POORP * POORP[i] +
+      b.ChLatino * ChLatino[i] +
+      b.ChAfricanAmerican * ChAfricanAmerican[i] +
+      b.ChOtherMultiracial * ChOtherMultiracial[i] 
+    }
+  for (i in 1:N.child){
+      # priors on L1 predictors, for multiple imputation
+      PPVTEPF[i] ~ dnorm(params.PPVTEPF[1], params.PPVTEPF[2]) # min=-62, max=42
+      CHMATEDNP[i] ~ dnorm(params.CHMATEDNP[1], params.CHMATEDNP[2]) # min=-62, max=42
+      CHGENP[i] ~ dbern(param.CHGENP) # 0 or 1
+      POORP[i] ~ dbern(param.POORP) # 0 or 1
+      ChLatino[i] ~ dbern(param.ChLatino) # 0 or 1
+      ChAfricanAmerican[i] ~ dbern(param.ChAfricanAmerican) # 0 or 1
+      ChOtherMultiracial[i] ~ dbern(param.ChOtherMultiracial) # 0 or 1     
+  }
+  b.PPVTEPF ~ dnorm(0, 0.01)
+  b.CHGENP ~ dnorm(0, 0.01) 
+  b.POORP ~ dnorm (0, 0.01)
+  b.CHMATEDNP ~ dnorm (0, 0.01)
+  b.ChLatino ~ dnorm(0, 0.01)
+  b.ChAfricanAmerican ~ dnorm(0, 0.01)
+  b.ChOtherMultiracial ~ dnorm(0, 0.01) 
+
+  for (j in 1:N.class){
+    b.class[j] ~ dnorm(b.class.hat[j], tau.class)
+    b.class.hat[j] <- 
+      b.LOCATIONP * LOCATIONP[j] + 
+      b.FULLDAYP * FULLDAYP[j] + 
+      b.BachelorsY * BachelorsY[j] +
+      b.BachelorsN * BachelorsN[j] 
+    }
+  for (j in 1:N.class){    
+      # priors on L2 predictors, for multiple imputation
+      LOCATIONP[j] ~ dbern(param.LOCATIONP) # 0 or 1
+      FULLDAYP[j] ~ dbern(param.FULLDAYP) # 0 or 1
+      BachelorsY[j] ~ dbern(param.BachelorsY) # 0 or 1
+      BachelorsN[j] ~ dbern(param.BachelorsN) # 0 or 1
+  }
+  
+  b.class.hat.mu <- mean(b.class.hat[])
+  
+  b.class0 ~ dnorm(0,.01)
+  b.LOCATIONP ~ dnorm(0,.01)
+  b.FULLDAYP ~ dnorm(0,.01)
+  b.BachelorsY ~ dnorm(0,.01)
+  b.BachelorsN ~ dnorm(0,.01)
+  
+  tau ~ dgamma(1,1)
+  tau.class ~ dgamma(1,1)
+}
+
+# -------------------------------------------------
+# set the parameters to track
+# -------------------------------------------------
+params <- c("b.PPVTEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
+            "b.LOCATIONP", "b.FULLDAYP", "b.BachelorsY", "b.BachelorsN", 
+            "b.class0" )
+
+# -------------------------------------------------
+# specify the inits
+# -------------------------------------------------
+
+# special inits for predictors with missing values (must specify if it's missing, must leave as NA if it's available)
+# inits for L1 predictors
+PPVTEPF.inits <- jags.dat$PPVTEPF
+CHGENP.inits <- jags.dat$CHGENP
+POORP.inits <- jags.dat$POORP
+ChLatino.inits <- jags.dat$ChLatino
+ChAfricanAmerican.inits <- jags.dat$ChAfricanAmerican
+ChOtherMultiracial.inits <- jags.dat$ChOtherMultiracial
+CHMATEDNP.inits <- jags.dat$CHMATEDNP
+
+# replace with reasonable inits for missing values
+PPVTEPF.inits[is.na(jags.dat$PPVTEPF)] <- 0
+CHGENP.inits[is.na(jags.dat$CHGENP)] <- 0
+POORP.inits[is.na(jags.dat$POORP)] <- 0
+ChLatino.inits[is.na(jags.dat$ChLatino)] <- 0
+ChAfricanAmerican.inits[is.na(jags.dat$ChAfricanAmerican)] <- 0
+ChOtherMultiracial.inits[is.na(jags.dat$ChOtherMultiracial)] <- 0
+CHMATEDNP.inits[is.na(jags.dat$CHMATEDNP)] <- 0
+
+# set init=NA for all observed cases
+PPVTEPF.inits[!is.na(jags.dat$PPVTEPF)] <- NA
+CHGENP.inits[!is.na(jags.dat$CHGENP)] <- NA
+POORP.inits[!is.na(jags.dat$POORP)] <- NA
+ChLatino.inits[!is.na(jags.dat$ChLatino)] <- NA
+ChAfricanAmerican.inits[!is.na(jags.dat$ChAfricanAmerican)] <- NA
+ChOtherMultiracial.inits[!is.na(jags.dat$ChOtherMultiracial)] <- NA
+CHMATEDNP.inits[!is.na(jags.dat$CHMATEDNP)] <- NA
+
+
+#inits for L2 predictors
+LOCATIONP.inits <- jags.dat$LOCATIONP
+FULLDAYP.inits <- jags.dat$FULLDAYP
+BachelorsY.inits <- jags.dat$BachelorsY
+BachelorsN.inits <- jags.dat$BachelorsN
+
+# replace with reasonable inits for missing values
+LOCATIONP.inits[is.na(jags.dat$LOCATIONP)] <- 0
+FULLDAYP.inits[is.na(jags.dat$FULLDAYP)] <- 0
+BachelorsY.inits[is.na(jags.dat$BachelorsY)] <- 0
+BachelorsN.inits[is.na(jags.dat$BachelorsN)] <- 0
+
+# set init=NA for all observed cases
+LOCATIONP.inits[!is.na(jags.dat$LOCATIONP)] <- NA
+FULLDAYP.inits[!is.na(jags.dat$FULLDAYP)] <- NA
+BachelorsY.inits[!is.na(jags.dat$BachelorsY)] <- NA
+BachelorsN.inits[!is.na(jags.dat$BachelorsN)] <- NA
+
+# the inits lists are the same, I just need two of them since there are 2 chains
+inits1 <-list(tau= 1, tau.class=1, b.PPVTEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLatino=0, b.ChAfricanAmerican=0, b.ChOtherMultiracial=0, b.CHMATEDNP=0, 
+              b.class0=0, b.LOCATIONP=0, b.FULLDAYP=0, b.BachelorsY=0, b.BachelorsN=0, 
+              PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
+inits2 <- inits1
+
+# -------------------------------------------------
+# run the model
+# -------------------------------------------------
+
+library(R2jags) 
+# set.seed(123)
+q1m4.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+```
+
+### Model 5: Highest degree as predictor of prereading (WJ1_SSEP)
+
+```{r bayes_q1m5}
+# -------------------------------------------------
+# write the jags model
+# -------------------------------------------------
+
+jags.model <- function(){
+  for (i in 1:N.child){
+    WJ1_SSEPS[i] ~ dnorm (mu[i], tau)
+    mu[i] <- b.class[CLASS[i]] + 
+      b.WJ1_SSEPF * WJ1_SSEPF[i] + 
+      b.CHGENP * CHGENP[i] + 
+      b.CHMATEDNP * CHMATEDNP[i] + 
+      b.POORP * POORP[i] +
+      b.ChLatino * ChLatino[i] +
+      b.ChAfricanAmerican * ChAfricanAmerican[i] +
+      b.ChOtherMultiracial * ChOtherMultiracial[i] 
+    }
+  for (i in 1:N.child){
+      # priors on L1 predictors, for multiple imputation
+      WJ1_SSEPF[i] ~ dnorm(params.WJ1_SSEPF[1], params.WJ1_SSEPF[2]) 
+      CHMATEDNP[i] ~ dnorm(params.CHMATEDNP[1], params.CHMATEDNP[2]) # min=-62, max=42
+      CHGENP[i] ~ dbern(param.CHGENP) # 0 or 1
+      POORP[i] ~ dbern(param.POORP) # 0 or 1
+      ChLatino[i] ~ dbern(param.ChLatino) # 0 or 1
+      ChAfricanAmerican[i] ~ dbern(param.ChAfricanAmerican) # 0 or 1
+      ChOtherMultiracial[i] ~ dbern(param.ChOtherMultiracial) # 0 or 1     
+  }
+  b.WJ1_SSEPF ~ dnorm(0, 0.01)
+  b.CHGENP ~ dnorm(0, 0.01) 
+  b.POORP ~ dnorm (0, 0.01)
+  b.CHMATEDNP ~ dnorm (0, 0.01)
+  b.ChLatino ~ dnorm(0, 0.01)
+  b.ChAfricanAmerican ~ dnorm(0, 0.01)
+  b.ChOtherMultiracial ~ dnorm(0, 0.01) 
+
+  for (j in 1:N.class){
+    b.class[j] ~ dnorm(b.class.hat[j], tau.class)
+    b.class.hat[j] <- 
+      b.LOCATIONP * LOCATIONP[j] + 
+      b.FULLDAYP * FULLDAYP[j] + 
+      b.HS * HS[j] +
+      b.AS * AS[j] +
+      b.BA * BA[j] +
+      b.Grad * Grad[j]
+    }
+  for (j in 1:N.class){    
+      # priors on L2 predictors, for multiple imputation
+      LOCATIONP[j] ~ dbern(param.LOCATIONP) # 0 or 1
+      FULLDAYP[j] ~ dbern(param.FULLDAYP) # 0 or 1
+      HS[j] ~ dbern(param.HS) # 0 or 1
+      AS[j] ~ dbern(param.AS) # 0 or 1
+      BA[j] ~ dbern(param.BA) # 0 or 1
+      Grad[j] ~ dbern(param.Grad) # 0 or 1
+  }
+  
+  b.class.hat.mu <- mean(b.class.hat[])
+  
+  b.class0 ~ dnorm(0,.01)
+  b.LOCATIONP ~ dnorm(0,.01)
+  b.FULLDAYP ~ dnorm(0,.01)
+  b.HS ~ dnorm(0,.01)
+  b.AS ~ dnorm(0,.01)
+  b.BA ~ dnorm(0,.01)
+  b.Grad ~ dnorm(0,.01)
+  
+  tau ~ dgamma(1,1)
+  tau.class ~ dgamma(1,1)
+}
+
+# -------------------------------------------------
+# set the parameters to track
+# -------------------------------------------------
+params <- c("b.WJ1_SSEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
+            "b.LOCATIONP", "b.FULLDAYP", "b.HS", "b.AS", "b.BA", "b.Grad",
+            "b.class0" )
+
+# -------------------------------------------------
+# specify the inits
+# -------------------------------------------------
+
+# special inits for predictors with missing values (must specify if it's missing, must leave as NA if it's available)
+# inits for L1 predictors
+WJ1_SSEPF.inits <- jags.dat$WJ1_SSEPF
+CHGENP.inits <- jags.dat$CHGENP
+POORP.inits <- jags.dat$POORP
+ChLatino.inits <- jags.dat$ChLatino
+ChAfricanAmerican.inits <- jags.dat$ChAfricanAmerican
+ChOtherMultiracial.inits <- jags.dat$ChOtherMultiracial
+CHMATEDNP.inits <- jags.dat$CHMATEDNP
+
+# replace with reasonable inits for missing values
+WJ1_SSEPF.inits[is.na(jags.dat$WJ1_SSEPF)] <- 0
+CHGENP.inits[is.na(jags.dat$CHGENP)] <- 0
+POORP.inits[is.na(jags.dat$POORP)] <- 0
+ChLatino.inits[is.na(jags.dat$ChLatino)] <- 0
+ChAfricanAmerican.inits[is.na(jags.dat$ChAfricanAmerican)] <- 0
+ChOtherMultiracial.inits[is.na(jags.dat$ChOtherMultiracial)] <- 0
+CHMATEDNP.inits[is.na(jags.dat$CHMATEDNP)] <- 0
+
+# set init=NA for all observed cases
+WJ1_SSEPF.inits[!is.na(jags.dat$WJ1_SSEPF)] <- NA
+CHGENP.inits[!is.na(jags.dat$CHGENP)] <- NA
+POORP.inits[!is.na(jags.dat$POORP)] <- NA
+ChLatino.inits[!is.na(jags.dat$ChLatino)] <- NA
+ChAfricanAmerican.inits[!is.na(jags.dat$ChAfricanAmerican)] <- NA
+ChOtherMultiracial.inits[!is.na(jags.dat$ChOtherMultiracial)] <- NA
+CHMATEDNP.inits[!is.na(jags.dat$CHMATEDNP)] <- NA
+
+
+#inits for L2 predictors
+LOCATIONP.inits <- jags.dat$LOCATIONP
+FULLDAYP.inits <- jags.dat$FULLDAYP
+HS.inits <- jags.dat$HS
+AS.inits <- jags.dat$AS
+BA.inits <- jags.dat$BA
+Grad.inits <- jags.dat$Grad
+
+# replace with reasonable inits for missing values
+LOCATIONP.inits[is.na(jags.dat$LOCATIONP)] <- 0
+FULLDAYP.inits[is.na(jags.dat$FULLDAYP)] <- 0
+HS.inits[is.na(jags.dat$HS)] <- 0
+AS.inits[is.na(jags.dat$AS)] <- 0
+BA.inits[is.na(jags.dat$BA)] <- 0
+Grad.inits[is.na(jags.dat$Grad)] <- 0
+
+# set init=NA for all observed cases
+LOCATIONP.inits[!is.na(jags.dat$LOCATIONP)] <- NA
+FULLDAYP.inits[!is.na(jags.dat$FULLDAYP)] <- NA
+HS.inits[!is.na(jags.dat$HS)] <- NA
+AS.inits[!is.na(jags.dat$AS)] <- NA
+BA.inits[!is.na(jags.dat$BA)] <- NA
+Grad.inits[!is.na(jags.dat$Grad)] <- NA
+
+# the inits lists are the same, I just need two of them since there are 2 chains
+inits1 <-list(tau= 1, tau.class=1, b.WJ1_SSEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLatino=0, b.ChAfricanAmerican=0, b.ChOtherMultiracial=0, b.CHMATEDNP=0, 
+              b.class0=0, b.LOCATIONP=0, b.FULLDAYP=0, b.HS=0, b.AS=0, b.BA=0, b.Grad=0, 
+              WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
+inits2 <- inits1
+
+# -------------------------------------------------
+# run the model
+# -------------------------------------------------
+
+library(R2jags) 
+# set.seed(123)
+q1m5.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+```
+
+### Model 6: Bachelors degree as predictor of prereading (WJ1_SSEP)
+
+```{r bayes_q1m6}
+# -------------------------------------------------
+# write the jags model
+# -------------------------------------------------
+
+jags.model <- function(){
+  for (i in 1:N.child){
+    WJ1_SSEPS[i] ~ dnorm (mu[i], tau)
+    mu[i] <- b.class[CLASS[i]] + 
+      b.WJ1_SSEPF * WJ1_SSEPF[i] + 
+      b.CHGENP * CHGENP[i] + 
+      b.CHMATEDNP * CHMATEDNP[i] + 
+      b.POORP * POORP[i] +
+      b.ChLatino * ChLatino[i] +
+      b.ChAfricanAmerican * ChAfricanAmerican[i] +
+      b.ChOtherMultiracial * ChOtherMultiracial[i] 
+    }
+  for (i in 1:N.child){
+      # priors on L1 predictors, for multiple imputation
+      WJ1_SSEPF[i] ~ dnorm(params.WJ1_SSEPF[1], params.WJ1_SSEPF[2]) # min=-62, max=42
+      CHMATEDNP[i] ~ dnorm(params.CHMATEDNP[1], params.CHMATEDNP[2]) # min=-62, max=42
+      CHGENP[i] ~ dbern(param.CHGENP) # 0 or 1
+      POORP[i] ~ dbern(param.POORP) # 0 or 1
+      ChLatino[i] ~ dbern(param.ChLatino) # 0 or 1
+      ChAfricanAmerican[i] ~ dbern(param.ChAfricanAmerican) # 0 or 1
+      ChOtherMultiracial[i] ~ dbern(param.ChOtherMultiracial) # 0 or 1     
+  }
+  b.WJ1_SSEPF ~ dnorm(0, 0.01)
+  b.CHGENP ~ dnorm(0, 0.01) 
+  b.POORP ~ dnorm (0, 0.01)
+  b.CHMATEDNP ~ dnorm (0, 0.01)
+  b.ChLatino ~ dnorm(0, 0.01)
+  b.ChAfricanAmerican ~ dnorm(0, 0.01)
+  b.ChOtherMultiracial ~ dnorm(0, 0.01) 
+
+  for (j in 1:N.class){
+    b.class[j] ~ dnorm(b.class.hat[j], tau.class)
+    b.class.hat[j] <- 
+      b.LOCATIONP * LOCATIONP[j] + 
+      b.FULLDAYP * FULLDAYP[j] + 
+      b.BachelorsY * BachelorsY[j] +
+      b.BachelorsN * BachelorsN[j] 
+    }
+  for (j in 1:N.class){    
+      # priors on L2 predictors, for multiple imputation
+      LOCATIONP[j] ~ dbern(param.LOCATIONP) # 0 or 1
+      FULLDAYP[j] ~ dbern(param.FULLDAYP) # 0 or 1
+      BachelorsY[j] ~ dbern(param.BachelorsY) # 0 or 1
+      BachelorsN[j] ~ dbern(param.BachelorsN) # 0 or 1
+  }
+  
+  b.class.hat.mu <- mean(b.class.hat[])
+  
+  b.class0 ~ dnorm(0,.01)
+  b.LOCATIONP ~ dnorm(0,.01)
+  b.FULLDAYP ~ dnorm(0,.01)
+  b.BachelorsY ~ dnorm(0,.01)
+  b.BachelorsN ~ dnorm(0,.01)
+  
+  tau ~ dgamma(1,1)
+  tau.class ~ dgamma(1,1)
+}
+
+# -------------------------------------------------
+# set the parameters to track
+# -------------------------------------------------
+params <- c("b.WJ1_SSEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
+            "b.LOCATIONP", "b.FULLDAYP", "b.BachelorsY", "b.BachelorsN", 
+            "b.class0" )
+
+# -------------------------------------------------
+# specify the inits
+# -------------------------------------------------
+
+# special inits for predictors with missing values (must specify if it's missing, must leave as NA if it's available)
+# inits for L1 predictors
+WJ1_SSEPF.inits <- jags.dat$WJ1_SSEPF
+CHGENP.inits <- jags.dat$CHGENP
+POORP.inits <- jags.dat$POORP
+ChLatino.inits <- jags.dat$ChLatino
+ChAfricanAmerican.inits <- jags.dat$ChAfricanAmerican
+ChOtherMultiracial.inits <- jags.dat$ChOtherMultiracial
+CHMATEDNP.inits <- jags.dat$CHMATEDNP
+
+# replace with reasonable inits for missing values
+WJ1_SSEPF.inits[is.na(jags.dat$WJ1_SSEPF)] <- 0
+CHGENP.inits[is.na(jags.dat$CHGENP)] <- 0
+POORP.inits[is.na(jags.dat$POORP)] <- 0
+ChLatino.inits[is.na(jags.dat$ChLatino)] <- 0
+ChAfricanAmerican.inits[is.na(jags.dat$ChAfricanAmerican)] <- 0
+ChOtherMultiracial.inits[is.na(jags.dat$ChOtherMultiracial)] <- 0
+CHMATEDNP.inits[is.na(jags.dat$CHMATEDNP)] <- 0
+
+# set init=NA for all observed cases
+WJ1_SSEPF.inits[!is.na(jags.dat$WJ1_SSEPF)] <- NA
+CHGENP.inits[!is.na(jags.dat$CHGENP)] <- NA
+POORP.inits[!is.na(jags.dat$POORP)] <- NA
+ChLatino.inits[!is.na(jags.dat$ChLatino)] <- NA
+ChAfricanAmerican.inits[!is.na(jags.dat$ChAfricanAmerican)] <- NA
+ChOtherMultiracial.inits[!is.na(jags.dat$ChOtherMultiracial)] <- NA
+CHMATEDNP.inits[!is.na(jags.dat$CHMATEDNP)] <- NA
+
+
+#inits for L2 predictors
+LOCATIONP.inits <- jags.dat$LOCATIONP
+FULLDAYP.inits <- jags.dat$FULLDAYP
+BachelorsY.inits <- jags.dat$BachelorsY
+BachelorsN.inits <- jags.dat$BachelorsN
+
+# replace with reasonable inits for missing values
+LOCATIONP.inits[is.na(jags.dat$LOCATIONP)] <- 0
+FULLDAYP.inits[is.na(jags.dat$FULLDAYP)] <- 0
+BachelorsY.inits[is.na(jags.dat$BachelorsY)] <- 0
+BachelorsN.inits[is.na(jags.dat$BachelorsN)] <- 0
+
+# set init=NA for all observed cases
+LOCATIONP.inits[!is.na(jags.dat$LOCATIONP)] <- NA
+FULLDAYP.inits[!is.na(jags.dat$FULLDAYP)] <- NA
+BachelorsY.inits[!is.na(jags.dat$BachelorsY)] <- NA
+BachelorsN.inits[!is.na(jags.dat$BachelorsN)] <- NA
+
+# the inits lists are the same, I just need two of them since there are 2 chains
+inits1 <-list(tau= 1, tau.class=1, b.WJ1_SSEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLatino=0, b.ChAfricanAmerican=0, b.ChOtherMultiracial=0, b.CHMATEDNP=0, 
+              b.class0=0, b.LOCATIONP=0, b.FULLDAYP=0, b.BachelorsY=0, b.BachelorsN=0, 
+              WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
+inits2 <- inits1
+
+# -------------------------------------------------
+# run the model
+# -------------------------------------------------
+
+library(R2jags) 
+# set.seed(123)
+q1m6.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+```
+
+### Model 7: Highest degree as predictor of early math (WJ10_SSEP)
+
+```{r bayes_q1m7}
+# -------------------------------------------------
+# write the jags model
+# -------------------------------------------------
+
+jags.model <- function(){
+  for (i in 1:N.child){
+    WJ10_SSEPS[i] ~ dnorm (mu[i], tau)
+    mu[i] <- b.class[CLASS[i]] + 
+      b.WJ10_SSEPF * WJ10_SSEPF[i] + 
+      b.CHGENP * CHGENP[i] + 
+      b.CHMATEDNP * CHMATEDNP[i] + 
+      b.POORP * POORP[i] +
+      b.ChLatino * ChLatino[i] +
+      b.ChAfricanAmerican * ChAfricanAmerican[i] +
+      b.ChOtherMultiracial * ChOtherMultiracial[i] 
+    }
+  for (i in 1:N.child){
+      # priors on L1 predictors, for multiple imputation
+      WJ10_SSEPF[i] ~ dnorm(params.WJ10_SSEPF[1], params.WJ10_SSEPF[2]) 
+      CHMATEDNP[i] ~ dnorm(params.CHMATEDNP[1], params.CHMATEDNP[2]) # min=-62, max=42
+      CHGENP[i] ~ dbern(param.CHGENP) # 0 or 1
+      POORP[i] ~ dbern(param.POORP) # 0 or 1
+      ChLatino[i] ~ dbern(param.ChLatino) # 0 or 1
+      ChAfricanAmerican[i] ~ dbern(param.ChAfricanAmerican) # 0 or 1
+      ChOtherMultiracial[i] ~ dbern(param.ChOtherMultiracial) # 0 or 1     
+  }
+  b.WJ10_SSEPF ~ dnorm(0, 0.01)
+  b.CHGENP ~ dnorm(0, 0.01) 
+  b.POORP ~ dnorm (0, 0.01)
+  b.CHMATEDNP ~ dnorm (0, 0.01)
+  b.ChLatino ~ dnorm(0, 0.01)
+  b.ChAfricanAmerican ~ dnorm(0, 0.01)
+  b.ChOtherMultiracial ~ dnorm(0, 0.01) 
+
+  for (j in 1:N.class){
+    b.class[j] ~ dnorm(b.class.hat[j], tau.class)
+    b.class.hat[j] <- 
+      b.LOCATIONP * LOCATIONP[j] + 
+      b.FULLDAYP * FULLDAYP[j] + 
+      b.HS * HS[j] +
+      b.AS * AS[j] +
+      b.BA * BA[j] +
+      b.Grad * Grad[j]
+    }
+  for (j in 1:N.class){    
+      # priors on L2 predictors, for multiple imputation
+      LOCATIONP[j] ~ dbern(param.LOCATIONP) # 0 or 1
+      FULLDAYP[j] ~ dbern(param.FULLDAYP) # 0 or 1
+      HS[j] ~ dbern(param.HS) # 0 or 1
+      AS[j] ~ dbern(param.AS) # 0 or 1
+      BA[j] ~ dbern(param.BA) # 0 or 1
+      Grad[j] ~ dbern(param.Grad) # 0 or 1
+  }
+  
+  b.class.hat.mu <- mean(b.class.hat[])
+  
+  b.class0 ~ dnorm(0,.01)
+  b.LOCATIONP ~ dnorm(0,.01)
+  b.FULLDAYP ~ dnorm(0,.01)
+  b.HS ~ dnorm(0,.01)
+  b.AS ~ dnorm(0,.01)
+  b.BA ~ dnorm(0,.01)
+  b.Grad ~ dnorm(0,.01)
+  
+  tau ~ dgamma(1,1)
+  tau.class ~ dgamma(1,1)
+}
+
+# -------------------------------------------------
+# set the parameters to track
+# -------------------------------------------------
+params <- c("b.WJ10_SSEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
+            "b.LOCATIONP", "b.FULLDAYP", "b.HS", "b.AS", "b.BA", "b.Grad",
+            "b.class0" )
+
+# -------------------------------------------------
+# specify the inits
+# -------------------------------------------------
+
+# special inits for predictors with missing values (must specify if it's missing, must leave as NA if it's available)
+# inits for L1 predictors
+WJ10_SSEPF.inits <- jags.dat$WJ10_SSEPF
+CHGENP.inits <- jags.dat$CHGENP
+POORP.inits <- jags.dat$POORP
+ChLatino.inits <- jags.dat$ChLatino
+ChAfricanAmerican.inits <- jags.dat$ChAfricanAmerican
+ChOtherMultiracial.inits <- jags.dat$ChOtherMultiracial
+CHMATEDNP.inits <- jags.dat$CHMATEDNP
+
+# replace with reasonable inits for missing values
+WJ10_SSEPF.inits[is.na(jags.dat$WJ10_SSEPF)] <- 0
+CHGENP.inits[is.na(jags.dat$CHGENP)] <- 0
+POORP.inits[is.na(jags.dat$POORP)] <- 0
+ChLatino.inits[is.na(jags.dat$ChLatino)] <- 0
+ChAfricanAmerican.inits[is.na(jags.dat$ChAfricanAmerican)] <- 0
+ChOtherMultiracial.inits[is.na(jags.dat$ChOtherMultiracial)] <- 0
+CHMATEDNP.inits[is.na(jags.dat$CHMATEDNP)] <- 0
+
+# set init=NA for all observed cases
+WJ10_SSEPF.inits[!is.na(jags.dat$WJ10_SSEPF)] <- NA
+CHGENP.inits[!is.na(jags.dat$CHGENP)] <- NA
+POORP.inits[!is.na(jags.dat$POORP)] <- NA
+ChLatino.inits[!is.na(jags.dat$ChLatino)] <- NA
+ChAfricanAmerican.inits[!is.na(jags.dat$ChAfricanAmerican)] <- NA
+ChOtherMultiracial.inits[!is.na(jags.dat$ChOtherMultiracial)] <- NA
+CHMATEDNP.inits[!is.na(jags.dat$CHMATEDNP)] <- NA
+
+
+#inits for L2 predictors
+LOCATIONP.inits <- jags.dat$LOCATIONP
+FULLDAYP.inits <- jags.dat$FULLDAYP
+HS.inits <- jags.dat$HS
+AS.inits <- jags.dat$AS
+BA.inits <- jags.dat$BA
+Grad.inits <- jags.dat$Grad
+
+# replace with reasonable inits for missing values
+LOCATIONP.inits[is.na(jags.dat$LOCATIONP)] <- 0
+FULLDAYP.inits[is.na(jags.dat$FULLDAYP)] <- 0
+HS.inits[is.na(jags.dat$HS)] <- 0
+AS.inits[is.na(jags.dat$AS)] <- 0
+BA.inits[is.na(jags.dat$BA)] <- 0
+Grad.inits[is.na(jags.dat$Grad)] <- 0
+
+# set init=NA for all observed cases
+LOCATIONP.inits[!is.na(jags.dat$LOCATIONP)] <- NA
+FULLDAYP.inits[!is.na(jags.dat$FULLDAYP)] <- NA
+HS.inits[!is.na(jags.dat$HS)] <- NA
+AS.inits[!is.na(jags.dat$AS)] <- NA
+BA.inits[!is.na(jags.dat$BA)] <- NA
+Grad.inits[!is.na(jags.dat$Grad)] <- NA
+
+# the inits lists are the same, I just need two of them since there are 2 chains
+inits1 <-list(tau= 1, tau.class=1, b.WJ10_SSEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLatino=0, b.ChAfricanAmerican=0, b.ChOtherMultiracial=0, b.CHMATEDNP=0, 
+              b.class0=0, b.LOCATIONP=0, b.FULLDAYP=0, b.HS=0, b.AS=0, b.BA=0, b.Grad=0, 
+              WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
+inits2 <- inits1
+
+# -------------------------------------------------
+# run the model
+# -------------------------------------------------
+
+library(R2jags) 
+# set.seed(123)
+q1m7.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+```
+
+### Model 8: Bachelors degree as predictor of early math (WJ10_SSEP)
+
+```{r bayes_q1m8}
+# -------------------------------------------------
+# write the jags model
+# -------------------------------------------------
+
+jags.model <- function(){
+  for (i in 1:N.child){
+    WJ10_SSEPS[i] ~ dnorm (mu[i], tau)
+    mu[i] <- b.class[CLASS[i]] + 
+      b.WJ10_SSEPF * WJ10_SSEPF[i] + 
+      b.CHGENP * CHGENP[i] + 
+      b.CHMATEDNP * CHMATEDNP[i] + 
+      b.POORP * POORP[i] +
+      b.ChLatino * ChLatino[i] +
+      b.ChAfricanAmerican * ChAfricanAmerican[i] +
+      b.ChOtherMultiracial * ChOtherMultiracial[i] 
+    }
+  for (i in 1:N.child){
+      # priors on L1 predictors, for multiple imputation
+      WJ10_SSEPF[i] ~ dnorm(params.WJ10_SSEPF[1], params.WJ10_SSEPF[2]) # min=-62, max=42
+      CHMATEDNP[i] ~ dnorm(params.CHMATEDNP[1], params.CHMATEDNP[2]) # min=-62, max=42
+      CHGENP[i] ~ dbern(param.CHGENP) # 0 or 1
+      POORP[i] ~ dbern(param.POORP) # 0 or 1
+      ChLatino[i] ~ dbern(param.ChLatino) # 0 or 1
+      ChAfricanAmerican[i] ~ dbern(param.ChAfricanAmerican) # 0 or 1
+      ChOtherMultiracial[i] ~ dbern(param.ChOtherMultiracial) # 0 or 1     
+  }
+  b.WJ10_SSEPF ~ dnorm(0, 0.01)
+  b.CHGENP ~ dnorm(0, 0.01) 
+  b.POORP ~ dnorm (0, 0.01)
+  b.CHMATEDNP ~ dnorm (0, 0.01)
+  b.ChLatino ~ dnorm(0, 0.01)
+  b.ChAfricanAmerican ~ dnorm(0, 0.01)
+  b.ChOtherMultiracial ~ dnorm(0, 0.01) 
+
+  for (j in 1:N.class){
+    b.class[j] ~ dnorm(b.class.hat[j], tau.class)
+    b.class.hat[j] <- 
+      b.LOCATIONP * LOCATIONP[j] + 
+      b.FULLDAYP * FULLDAYP[j] + 
+      b.BachelorsY * BachelorsY[j] +
+      b.BachelorsN * BachelorsN[j] 
+    }
+  for (j in 1:N.class){    
+      # priors on L2 predictors, for multiple imputation
+      LOCATIONP[j] ~ dbern(param.LOCATIONP) # 0 or 1
+      FULLDAYP[j] ~ dbern(param.FULLDAYP) # 0 or 1
+      BachelorsY[j] ~ dbern(param.BachelorsY) # 0 or 1
+      BachelorsN[j] ~ dbern(param.BachelorsN) # 0 or 1
+  }
+  
+  b.class.hat.mu <- mean(b.class.hat[])
+  
+  b.class0 ~ dnorm(0,.01)
+  b.LOCATIONP ~ dnorm(0,.01)
+  b.FULLDAYP ~ dnorm(0,.01)
+  b.BachelorsY ~ dnorm(0,.01)
+  b.BachelorsN ~ dnorm(0,.01)
+  
+  tau ~ dgamma(1,1)
+  tau.class ~ dgamma(1,1)
+}
+
+# -------------------------------------------------
+# set the parameters to track
+# -------------------------------------------------
+params <- c("b.WJ10_SSEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
+            "b.LOCATIONP", "b.FULLDAYP", "b.BachelorsY", "b.BachelorsN", 
+            "b.class0" )
+
+# -------------------------------------------------
+# specify the inits
+# -------------------------------------------------
+
+# special inits for predictors with missing values (must specify if it's missing, must leave as NA if it's available)
+# inits for L1 predictors
+WJ10_SSEPF.inits <- jags.dat$WJ10_SSEPF
+CHGENP.inits <- jags.dat$CHGENP
+POORP.inits <- jags.dat$POORP
+ChLatino.inits <- jags.dat$ChLatino
+ChAfricanAmerican.inits <- jags.dat$ChAfricanAmerican
+ChOtherMultiracial.inits <- jags.dat$ChOtherMultiracial
+CHMATEDNP.inits <- jags.dat$CHMATEDNP
+
+# replace with reasonable inits for missing values
+WJ10_SSEPF.inits[is.na(jags.dat$WJ10_SSEPF)] <- 0
+CHGENP.inits[is.na(jags.dat$CHGENP)] <- 0
+POORP.inits[is.na(jags.dat$POORP)] <- 0
+ChLatino.inits[is.na(jags.dat$ChLatino)] <- 0
+ChAfricanAmerican.inits[is.na(jags.dat$ChAfricanAmerican)] <- 0
+ChOtherMultiracial.inits[is.na(jags.dat$ChOtherMultiracial)] <- 0
+CHMATEDNP.inits[is.na(jags.dat$CHMATEDNP)] <- 0
+
+# set init=NA for all observed cases
+WJ10_SSEPF.inits[!is.na(jags.dat$WJ10_SSEPF)] <- NA
+CHGENP.inits[!is.na(jags.dat$CHGENP)] <- NA
+POORP.inits[!is.na(jags.dat$POORP)] <- NA
+ChLatino.inits[!is.na(jags.dat$ChLatino)] <- NA
+ChAfricanAmerican.inits[!is.na(jags.dat$ChAfricanAmerican)] <- NA
+ChOtherMultiracial.inits[!is.na(jags.dat$ChOtherMultiracial)] <- NA
+CHMATEDNP.inits[!is.na(jags.dat$CHMATEDNP)] <- NA
+
+
+#inits for L2 predictors
+LOCATIONP.inits <- jags.dat$LOCATIONP
+FULLDAYP.inits <- jags.dat$FULLDAYP
+BachelorsY.inits <- jags.dat$BachelorsY
+BachelorsN.inits <- jags.dat$BachelorsN
+
+# replace with reasonable inits for missing values
+LOCATIONP.inits[is.na(jags.dat$LOCATIONP)] <- 0
+FULLDAYP.inits[is.na(jags.dat$FULLDAYP)] <- 0
+BachelorsY.inits[is.na(jags.dat$BachelorsY)] <- 0
+BachelorsN.inits[is.na(jags.dat$BachelorsN)] <- 0
+
+# set init=NA for all observed cases
+LOCATIONP.inits[!is.na(jags.dat$LOCATIONP)] <- NA
+FULLDAYP.inits[!is.na(jags.dat$FULLDAYP)] <- NA
+BachelorsY.inits[!is.na(jags.dat$BachelorsY)] <- NA
+BachelorsN.inits[!is.na(jags.dat$BachelorsN)] <- NA
+
+# the inits lists are the same, I just need two of them since there are 2 chains
+inits1 <-list(tau= 1, tau.class=1, b.WJ10_SSEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLatino=0, b.ChAfricanAmerican=0, b.ChOtherMultiracial=0, b.CHMATEDNP=0, 
+              b.class0=0, b.LOCATIONP=0, b.FULLDAYP=0, b.BachelorsY=0, b.BachelorsN=0, 
+              WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
+inits2 <- inits1
+
+# -------------------------------------------------
+# run the model
+# -------------------------------------------------
+
+library(R2jags) 
+# set.seed(123)
+q1m8.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
+```
+
+## Question 2
+
+## Question 3
+
+# Summary of Bayesian Results
+
+```{r bayes_summary}
+
+```
