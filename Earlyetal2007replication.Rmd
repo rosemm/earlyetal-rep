@@ -1712,5 +1712,52 @@ q1m8.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.sa
 # Summary of Bayesian Results
 
 ```{r bayes_summary}
+degree.fits <- list(q1m1.fit, q1m3.fit, q1m5.fit, q1m7.fit)
+bachelor.fits <- list(q1m2.fit, q1m4.fit, q1m6.fit, q1m8.fit)
+DV <- list("Classroom Quality (ECERTOT)", "Vocabulary (PPVT)", "Pre-reading Skills (WJ1_SSEP)", "Early Math (WJ10_SSEP)")
+IV <- list("Highest Degree", "Bachelors (Y/N)")
+
+library(mcmcplots)
+library(ggmcmc)
+library(ggplot2)
+
+# plot results
+for(i in 1:4){
+  fit <- degree.fits[[i]]
+  round(fit$BUGSoutput$summary[, c(1, 2, 3, 7)],3)
+  fit.mcmc <- as.mcmc(fit)
+  mcmcplot(fit.mcmc)
+  fit.gg <- ggs(fit.mcmc)
+  
+  fit.gg$Chain <- 1 # collapse both chains together, since convergence appears to be good
+  
+  betas <- subset(fit.gg, Parameter=="b.HS" | Parameter=="b.AS" | Parameter=="b.BA" | Parameter=="b.Grad")
+  
+  degree <- ggplot(betas, aes(x=value)) +
+  facet_wrap(~Parameter, scales="fixed", ncol=2) +
+  geom_density(color="lightblue", fill="lightblue", alpha=.7) +
+  geom_vline(x=0, linetype = 8) +
+  ggtitle(paste(DV[[i]], "by" ,IV[[1]])) +
+  theme_bw()
+  print(degree)
+  
+  fit <- bachelor.fits[[i]]
+  round(fit$BUGSoutput$summary[, c(1, 2, 3, 7)],3)
+  fit.mcmc <- as.mcmc(fit)
+  mcmcplot(fit.mcmc)
+  fit.gg <- ggs(fit.mcmc)
+  
+  fit.gg$Chain <- 1 # collapse both chains together, since convergence appears to be good
+  
+  betas <- subset(fit.gg, Parameter=="b.BachelorsY" | Parameter=="b.BachelorsN" )
+  
+  bachelors <- ggplot(betas, aes(x=value)) +
+  facet_wrap(~Parameter, scales="fixed", ncol=2) +
+  geom_density(color="lightblue", fill="lightblue", alpha=.7) +
+  geom_vline(x=0, linetype = 8) +
+  ggtitle(paste(DV[[i]], "by" ,IV[[2]])) +
+  theme_bw()
+  print(bachelors)
+}
 
 ```
