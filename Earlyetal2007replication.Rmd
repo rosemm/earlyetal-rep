@@ -965,13 +965,19 @@ AS.inits[!is.na(jags.dat$AS)] <- NA
 BA.inits[!is.na(jags.dat$BA)] <- NA
 Grad.inits[!is.na(jags.dat$Grad)] <- NA
 
-# the inits lists are the same, I just need two of them since there are 2 chains
-inits1 <-list(tau= 1, tau.class=1, b.PPVTEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLatino=0, b.ChAfricanAmerican=0, b.ChOtherMultiracial=0, b.CHMATEDNP=0, 
-              b.class0=0, b.LOCATIONP=0, b.FULLDAYP=0, b.HS=0, b.AS=0, b.BA=0, b.Grad=0, 
+# code is the same for each set of inits, but inits for the coefs should be a little different since they're being drawn from a normal dist each time
+inits1 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
               PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
-inits2 <- inits1
-inits3 <- inits1
+inits2 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
+inits3 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 
 # -------------------------------------------------
 # run the model
@@ -979,7 +985,7 @@ inits3 <- inits1
 
 library(R2jags) 
 q1m3.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 3, n.iter = 25000, n.burnin = 15000, n.thin=2)
+            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=2)
 ```
 
 ### Model 4: Bachelors degree as a predictor of receptive lang (PPVT)
@@ -1108,13 +1114,19 @@ FULLDAYP.inits[!is.na(jags.dat$FULLDAYP)] <- NA
 BachelorsY.inits[!is.na(jags.dat$BachelorsY)] <- NA
 BachelorsN.inits[!is.na(jags.dat$BachelorsN)] <- NA
 
-# the inits lists are the same, I just need two of them since there are 2 chains
-inits1 <-list(tau= 1, tau.class=1, b.PPVTEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLatino=0, b.ChAfricanAmerican=0, b.ChOtherMultiracial=0, b.CHMATEDNP=0, 
-              b.class0=0, b.LOCATIONP=0, b.FULLDAYP=0, b.BachelorsY=0, b.BachelorsN=0, 
+# code is the same for each set of inits, but inits for the coefs should be a little different since they're being drawn from a normal dist each time
+inits1 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
               PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
-inits2 <- inits1
-inits3 <- inits1
+inits2 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
+inits3 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 
 # -------------------------------------------------
 # run the model
@@ -1122,7 +1134,7 @@ inits3 <- inits1
 
 library(R2jags) 
 q1m4.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 3, n.iter = 25000, n.burnin = 15000, n.thin=2)
+            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=2)
 ```
 
 ### Model 5: Highest degree as predictor of prereading (WJ1_SSEP)
@@ -1260,13 +1272,19 @@ AS.inits[!is.na(jags.dat$AS)] <- NA
 BA.inits[!is.na(jags.dat$BA)] <- NA
 Grad.inits[!is.na(jags.dat$Grad)] <- NA
 
-# the inits lists are the same, I just need two of them since there are 2 chains
-inits1 <-list(tau= 1, tau.class=1, b.WJ1_SSEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLatino=0, b.ChAfricanAmerican=0, b.ChOtherMultiracial=0, b.CHMATEDNP=0, 
-              b.class0=0, b.LOCATIONP=0, b.FULLDAYP=0, b.HS=0, b.AS=0, b.BA=0, b.Grad=0, 
+# code is the same for each set of inits, but inits for the coefs should be a little different since they're being drawn from a normal dist each time
+inits1 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
               WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
-inits2 <- inits1
-inits3 <- inits1
+inits2 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
+inits3 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 
 # -------------------------------------------------
 # run the model
@@ -1274,7 +1292,7 @@ inits3 <- inits1
 
 library(R2jags) 
 q1m5.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 3, n.iter = 25000, n.burnin = 15000, n.thin=2)
+            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=2)
 ```
 
 ### Model 6: Bachelors degree as predictor of prereading (WJ1_SSEP)
@@ -1400,13 +1418,19 @@ FULLDAYP.inits[!is.na(jags.dat$FULLDAYP)] <- NA
 BachelorsY.inits[!is.na(jags.dat$BachelorsY)] <- NA
 BachelorsN.inits[!is.na(jags.dat$BachelorsN)] <- NA
 
-# the inits lists are the same, I just need two of them since there are 2 chains
-inits1 <-list(tau= 1, tau.class=1, b.WJ1_SSEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLatino=0, b.ChAfricanAmerican=0, b.ChOtherMultiracial=0, b.CHMATEDNP=0, 
-              b.class0=0, b.LOCATIONP=0, b.FULLDAYP=0, b.BachelorsY=0, b.BachelorsN=0, 
+# code is the same for each set of inits, but inits for the coefs should be a little different since they're being drawn from a normal dist each time
+inits1 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
               WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
-inits2 <- inits1
-inits3 <- inits1
+inits2 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
+inits3 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 
 # -------------------------------------------------
 # run the model
@@ -1414,7 +1438,7 @@ inits3 <- inits1
 
 library(R2jags) 
 q1m6.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 3, n.iter = 25000, n.burnin = 15000, n.thin=2)
+            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=2)
 ```
 
 ### Model 7: Highest degree as predictor of early math (WJ10_SSEP)
@@ -1552,13 +1576,19 @@ AS.inits[!is.na(jags.dat$AS)] <- NA
 BA.inits[!is.na(jags.dat$BA)] <- NA
 Grad.inits[!is.na(jags.dat$Grad)] <- NA
 
-# the inits lists are the same, I just need two of them since there are 2 chains
-inits1 <-list(tau= 1, tau.class=1, b.WJ10_SSEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLatino=0, b.ChAfricanAmerican=0, b.ChOtherMultiracial=0, b.CHMATEDNP=0, 
-              b.class0=0, b.LOCATIONP=0, b.FULLDAYP=0, b.HS=0, b.AS=0, b.BA=0, b.Grad=0, 
+# code is the same for each set of inits, but inits for the coefs should be a little different since they're being drawn from a normal dist each time
+inits1 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
               WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
-inits2 <- inits1
-inits3 <- inits1
+inits2 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
+inits3 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 
 # -------------------------------------------------
 # run the model
@@ -1566,7 +1596,7 @@ inits3 <- inits1
 
 library(R2jags) 
 q1m7.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 3, n.iter = 25000, n.burnin = 15000, n.thin=2)
+            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=2)
 ```
 
 ### Model 8: Bachelors degree as predictor of early math (WJ10_SSEP)
@@ -1692,13 +1722,19 @@ FULLDAYP.inits[!is.na(jags.dat$FULLDAYP)] <- NA
 BachelorsY.inits[!is.na(jags.dat$BachelorsY)] <- NA
 BachelorsN.inits[!is.na(jags.dat$BachelorsN)] <- NA
 
-# the inits lists are the same, I just need two of them since there are 2 chains
-inits1 <-list(tau= 1, tau.class=1, b.WJ10_SSEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLatino=0, b.ChAfricanAmerican=0, b.ChOtherMultiracial=0, b.CHMATEDNP=0, 
-              b.class0=0, b.LOCATIONP=0, b.FULLDAYP=0, b.BachelorsY=0, b.BachelorsN=0, 
+# code is the same for each set of inits, but inits for the coefs should be a little different since they're being drawn from a normal dist each time
+inits1 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
               WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
-inits2 <- inits1
-inits3 <- inits1
+inits2 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
+inits3 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
+              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
+              LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 
 # -------------------------------------------------
 # run the model
@@ -1706,7 +1742,7 @@ inits3 <- inits1
 
 library(R2jags) 
 q1m8.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 3, n.iter = 25000, n.burnin = 15000, n.thin=2)
+            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=2)
 ```
 
 ## Question 2
