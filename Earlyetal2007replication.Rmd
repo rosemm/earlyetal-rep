@@ -7,7 +7,7 @@ Data available [via ICPSR](http://www.icpsr.umich.edu/icpsrweb/ICPSR/studies/348
 
 ```{r clean_data}
 # Note: to replicate these results exactly, set the random seed first. This will generate the same random numbers for the MI process and Bayesian models as I present here.
-set.seed(24601)
+# set.seed(24601)
 
 # -----------------------------------
 # Get the data
@@ -632,7 +632,7 @@ jags.model <- function(){
 # -------------------------------------------------
 params <- c("b.RATIOPSP", "b.CLS_SIZEPS", "b.HOURSWKP", "b.WHITEP", "b.PERPOORP", "b.LOCATIONP", "b.FULLDAYP", 
             "b.TLatino", "b.TOtherMultiracial", "b.HS", "b.AS", "b.BA", "b.Grad",
-            "tau" )
+            "tau")
 
 # -------------------------------------------------
 # specify the inits
@@ -697,7 +697,7 @@ inits2 <- inits1
 
 library(R2jags) 
 q1m1.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 1000)
+            model.file = jags.model, n.chains = 2, n.iter = 30000, n.burnin = 1000, n.thin=1)
 ```
 
 ### Model 2: Bachelors degree as a predictor of quality (ECERS-R)
@@ -766,7 +766,7 @@ jags.model <- function(){
 # -------------------------------------------------
 params <- c("b.RATIOPSP", "b.CLS_SIZEPS", "b.HOURSWKP", "b.WHITEP", "b.PERPOORP", "b.LOCATIONP", "b.FULLDAYP", 
             "b.TLatino", "b.TOtherMultiracial", "b.BachelorsY", "b.BachelorsN",
-            "tau" )
+            "tau")
 
 # -------------------------------------------------
 # specify the inits
@@ -825,7 +825,7 @@ inits2 <- inits1
 
 library(R2jags) 
 q1m2.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 1000)
+            model.file = jags.model, n.chains = 2, n.iter = 30000, n.burnin = 1000, n.thin=1)
 ```
 
 ### Model 3: Highest degree as a predictor of receptive lang (PPVT)
@@ -889,7 +889,6 @@ jags.model <- function(){
   
   b.class.hat.mu <- mean(b.class.hat[])
   
-  b.class0 ~ dnorm(0,.01)
   b.LOCATIONP ~ dnorm(0,.01)
   b.FULLDAYP ~ dnorm(0,.01)
   b.HS ~ dnorm(0,.01)
@@ -906,7 +905,7 @@ jags.model <- function(){
 # -------------------------------------------------
 params <- c("b.PPVTEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
             "b.LOCATIONP", "b.FULLDAYP", "b.HS", "b.AS", "b.BA", "b.Grad",
-            "b.class0" )
+            "tau", "tau.class")
 
 # -------------------------------------------------
 # specify the inits
@@ -967,15 +966,15 @@ Grad.inits[!is.na(jags.dat$Grad)] <- NA
 
 # code is the same for each set of inits, but inits for the coefs should be a little different since they're being drawn from a normal dist each time
 inits1 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1, mean=0, sd=15), b.AS=rnorm(1, mean=0, sd=15), b.BA=rnorm(1, mean=0, sd=15), b.Grad=rnorm(1, mean=0, sd=15), 
               PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 inits2 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1, mean=0, sd=15), b.AS=rnorm(1, mean=0, sd=15), b.BA=rnorm(1, mean=0, sd=15), b.Grad=rnorm(1, mean=0, sd=15), 
               PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 inits3 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1, mean=0, sd=15), b.AS=rnorm(1, mean=0, sd=15), b.BA=rnorm(1, mean=0, sd=15), b.Grad=rnorm(1, mean=0, sd=15), 
               PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 
@@ -985,7 +984,7 @@ inits3 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POO
 
 library(R2jags) 
 q1m3.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=2)
+            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=1)
 ```
 
 ### Model 4: Bachelors degree as a predictor of receptive lang (PPVT)
@@ -1046,7 +1045,6 @@ jags.model <- function(){
   
   b.class.hat.mu <- mean(b.class.hat[])
   
-  b.class0 ~ dnorm(0,.01)
   b.LOCATIONP ~ dnorm(0,.01)
   b.FULLDAYP ~ dnorm(0,.01)
   b.BachelorsY ~ dnorm(0,.01)
@@ -1060,8 +1058,8 @@ jags.model <- function(){
 # set the parameters to track
 # -------------------------------------------------
 params <- c("b.PPVTEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
-            "b.LOCATIONP", "b.FULLDAYP", "b.BachelorsY", "b.BachelorsN", 
-            "b.class0" )
+            "b.LOCATIONP", "b.FULLDAYP", "b.BachelorsY", "b.BachelorsN",
+            "tau", "tau.class")
 
 # -------------------------------------------------
 # specify the inits
@@ -1116,15 +1114,15 @@ BachelorsN.inits[!is.na(jags.dat$BachelorsN)] <- NA
 
 # code is the same for each set of inits, but inits for the coefs should be a little different since they're being drawn from a normal dist each time
 inits1 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1, mean=0, sd=15), b.BachelorsN=rnorm(1, mean=0, sd=15), 
               PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 inits2 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1, mean=0, sd=15), b.BachelorsN=rnorm(1, mean=0, sd=15), 
               PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 inits3 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1, mean=0, sd=15), b.BachelorsN=rnorm(1, mean=0, sd=15), 
               PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 
@@ -1134,7 +1132,7 @@ inits3 <- list(tau= 1, tau.class=1, b.PPVTEPF=rnorm(1), b.CHGENP=rnorm(1), b.POO
 
 library(R2jags) 
 q1m4.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=2)
+            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=1)
 ```
 
 ### Model 5: Highest degree as predictor of prereading (WJ1_SSEP)
@@ -1196,7 +1194,6 @@ jags.model <- function(){
   
   b.class.hat.mu <- mean(b.class.hat[])
   
-  b.class0 ~ dnorm(0,.01)
   b.LOCATIONP ~ dnorm(0,.01)
   b.FULLDAYP ~ dnorm(0,.01)
   b.HS ~ dnorm(0,.01)
@@ -1213,7 +1210,7 @@ jags.model <- function(){
 # -------------------------------------------------
 params <- c("b.WJ1_SSEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
             "b.LOCATIONP", "b.FULLDAYP", "b.HS", "b.AS", "b.BA", "b.Grad",
-            "b.class0" )
+            "tau", "tau.class")
 
 # -------------------------------------------------
 # specify the inits
@@ -1274,15 +1271,15 @@ Grad.inits[!is.na(jags.dat$Grad)] <- NA
 
 # code is the same for each set of inits, but inits for the coefs should be a little different since they're being drawn from a normal dist each time
 inits1 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1, mean=0, sd=15), b.AS=rnorm(1, mean=0, sd=15), b.BA=rnorm(1, mean=0, sd=15), b.Grad=rnorm(1, mean=0, sd=15), 
               WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 inits2 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1, mean=0, sd=15), b.AS=rnorm(1, mean=0, sd=15), b.BA=rnorm(1, mean=0, sd=15), b.Grad=rnorm(1, mean=0, sd=15), 
               WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 inits3 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1, mean=0, sd=15), b.AS=rnorm(1, mean=0, sd=15), b.BA=rnorm(1, mean=0, sd=15), b.Grad=rnorm(1, mean=0, sd=15), 
               WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 
@@ -1292,7 +1289,7 @@ inits3 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.P
 
 library(R2jags) 
 q1m5.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=2)
+            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=1)
 ```
 
 ### Model 6: Bachelors degree as predictor of prereading (WJ1_SSEP)
@@ -1350,7 +1347,6 @@ jags.model <- function(){
   
   b.class.hat.mu <- mean(b.class.hat[])
   
-  b.class0 ~ dnorm(0,.01)
   b.LOCATIONP ~ dnorm(0,.01)
   b.FULLDAYP ~ dnorm(0,.01)
   b.BachelorsY ~ dnorm(0,.01)
@@ -1364,8 +1360,8 @@ jags.model <- function(){
 # set the parameters to track
 # -------------------------------------------------
 params <- c("b.WJ1_SSEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
-            "b.LOCATIONP", "b.FULLDAYP", "b.BachelorsY", "b.BachelorsN", 
-            "b.class0" )
+            "b.LOCATIONP", "b.FULLDAYP", "b.BachelorsY", "b.BachelorsN",
+            "tau", "tau.class")
 
 # -------------------------------------------------
 # specify the inits
@@ -1420,15 +1416,15 @@ BachelorsN.inits[!is.na(jags.dat$BachelorsN)] <- NA
 
 # code is the same for each set of inits, but inits for the coefs should be a little different since they're being drawn from a normal dist each time
 inits1 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1, mean=0, sd=15), b.BachelorsN=rnorm(1, mean=0, sd=15), 
               WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 inits2 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1, mean=0, sd=15), b.BachelorsN=rnorm(1, mean=0, sd=15), 
               WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 inits3 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1, mean=0, sd=15), b.BachelorsN=rnorm(1, mean=0, sd=15), 
               WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 
@@ -1438,7 +1434,7 @@ inits3 <- list(tau= 1, tau.class=1, b.WJ1_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.P
 
 library(R2jags) 
 q1m6.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=2)
+            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=1)
 ```
 
 ### Model 7: Highest degree as predictor of early math (WJ10_SSEP)
@@ -1500,7 +1496,6 @@ jags.model <- function(){
   
   b.class.hat.mu <- mean(b.class.hat[])
   
-  b.class0 ~ dnorm(0,.01)
   b.LOCATIONP ~ dnorm(0,.01)
   b.FULLDAYP ~ dnorm(0,.01)
   b.HS ~ dnorm(0,.01)
@@ -1517,7 +1512,7 @@ jags.model <- function(){
 # -------------------------------------------------
 params <- c("b.WJ10_SSEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
             "b.LOCATIONP", "b.FULLDAYP", "b.HS", "b.AS", "b.BA", "b.Grad",
-            "b.class0" )
+            "tau", "tau.class")
 
 # -------------------------------------------------
 # specify the inits
@@ -1578,15 +1573,15 @@ Grad.inits[!is.na(jags.dat$Grad)] <- NA
 
 # code is the same for each set of inits, but inits for the coefs should be a little different since they're being drawn from a normal dist each time
 inits1 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1, mean=0, sd=15), b.AS=rnorm(1, mean=0, sd=15), b.BA=rnorm(1, mean=0, sd=15), b.Grad=rnorm(1, mean=0, sd=15), 
               WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 inits2 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1, mean=0, sd=15), b.AS=rnorm(1, mean=0, sd=15), b.BA=rnorm(1, mean=0, sd=15), b.Grad=rnorm(1, mean=0, sd=15), 
               WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 inits3 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1), b.AS=rnorm(1), b.BA=rnorm(1), b.Grad=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.HS=rnorm(1, mean=0, sd=15), b.AS=rnorm(1, mean=0, sd=15), b.BA=rnorm(1, mean=0, sd=15), b.Grad=rnorm(1, mean=0, sd=15), 
               WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 
@@ -1596,7 +1591,7 @@ inits3 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.
 
 library(R2jags) 
 q1m7.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=2)
+            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=1)
 ```
 
 ### Model 8: Bachelors degree as predictor of early math (WJ10_SSEP)
@@ -1654,7 +1649,6 @@ jags.model <- function(){
   
   b.class.hat.mu <- mean(b.class.hat[])
   
-  b.class0 ~ dnorm(0,.01)
   b.LOCATIONP ~ dnorm(0,.01)
   b.FULLDAYP ~ dnorm(0,.01)
   b.BachelorsY ~ dnorm(0,.01)
@@ -1668,8 +1662,8 @@ jags.model <- function(){
 # set the parameters to track
 # -------------------------------------------------
 params <- c("b.WJ10_SSEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
-            "b.LOCATIONP", "b.FULLDAYP", "b.BachelorsY", "b.BachelorsN", 
-            "b.class0" )
+            "b.LOCATIONP", "b.FULLDAYP", "b.BachelorsY", "b.BachelorsN",
+            "tau", "tau.class")
 
 # -------------------------------------------------
 # specify the inits
@@ -1724,15 +1718,15 @@ BachelorsN.inits[!is.na(jags.dat$BachelorsN)] <- NA
 
 # code is the same for each set of inits, but inits for the coefs should be a little different since they're being drawn from a normal dist each time
 inits1 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1, mean=0, sd=15), b.BachelorsN=rnorm(1, mean=0, sd=15), 
               WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 inits2 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1, mean=0, sd=15), b.BachelorsN=rnorm(1, mean=0, sd=15), 
               WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 inits3 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.POORP=rnorm(1), b.ChLatino=rnorm(1), b.ChAfricanAmerican=rnorm(1), b.ChOtherMultiracial=rnorm(1), b.CHMATEDNP=rnorm(1), 
-              b.class0=rnorm(1), b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1), b.BachelorsN=rnorm(1), 
+              b.LOCATIONP=rnorm(1), b.FULLDAYP=rnorm(1), b.BachelorsY=rnorm(1, mean=0, sd=15), b.BachelorsN=rnorm(1, mean=0, sd=15), 
               WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 
@@ -1742,7 +1736,7 @@ inits3 <- list(tau= 1, tau.class=1, b.WJ10_SSEPF=rnorm(1), b.CHGENP=rnorm(1), b.
 
 library(R2jags) 
 q1m8.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=2)
+            model.file = jags.model, n.chains = 3, n.iter = 30000, n.burnin = 15000, n.thin=1)
 ```
 
 ## Question 2
@@ -1752,10 +1746,11 @@ q1m8.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), paramete
 # Summary of Bayesian Results
 
 ```{r bayes_summary}
+setwd("/Users/TARDIS/Documents/STUDIES/Early_et_al_bayesian_replication/plots") # for saving plot output
 degree.fits <- list(q1m1.fit, q1m3.fit, q1m5.fit, q1m7.fit)
 bachelor.fits <- list(q1m2.fit, q1m4.fit, q1m6.fit, q1m8.fit)
 DV <- list("Classroom Quality (ECERTOT)", "Vocabulary (PPVT)", "Pre-reading Skills (WJ1_SSEP)", "Early Math (WJ10_SSEP)")
-IV <- list("Highest Degree", "Bachelors (Y/N)")
+IV <- list("Highest Degree", "Bachelors")
 
 library(mcmcplots)
 library(ggmcmc)
@@ -1766,10 +1761,13 @@ for(i in 1:4){
   fit <- degree.fits[[i]]
   round(fit$BUGSoutput$summary[, c(1, 2, 3, 7)],3)
   fit.mcmc <- as.mcmc(fit)
-  mcmcplot(fit.mcmc)
-  fit.gg <- ggs(fit.mcmc)
+  # mcmcplot(fit.mcmc)
   
-  fit.gg$Chain <- 1 # collapse both chains together, since convergence appears to be good
+  fit.gg <- ggs(fit.mcmc)
+  # drop first 1000 iterations (more burn-in)
+  fit.gg <- fit.gg[fit.gg$Iteration>1000,]
+  ggmcmc(fit.gg, file=paste(DV[[i]], "by", IV[[1]], "ggmcmc-output.pdf", sep="-"))
+  fit.gg$Chain <- 1 # collapse chains together, since convergence appears to be okay
   
   betas <- subset(fit.gg, Parameter=="b.HS" | Parameter=="b.AS" | Parameter=="b.BA" | Parameter=="b.Grad")
   
@@ -1786,7 +1784,9 @@ for(i in 1:4){
   fit.mcmc <- as.mcmc(fit)
   mcmcplot(fit.mcmc)
   fit.gg <- ggs(fit.mcmc)
-  
+   # drop first 1000 iterations (more burn-in)
+  fit.gg <- fit.gg[fit.gg$Iteration>1000,]
+  ggmcmc(fit.gg, file=paste(DV[[i]], "by", IV[[2]], "ggmcmc-output.pdf", sep="-"))
   fit.gg$Chain <- 1 # collapse both chains together, since convergence appears to be good
   
   betas <- subset(fit.gg, Parameter=="b.BachelorsY" | Parameter=="b.BachelorsN" )
