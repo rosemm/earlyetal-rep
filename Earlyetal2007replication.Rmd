@@ -115,10 +115,15 @@ child_data$CHRACEP <- revalue(child_data$CHRACEP, c("(1) Latino"="ChLatino",
                                                     "(4) Asian"="ChOtherMultiracial", 
                                                     "(5) White"="ChWhite", 
                                                     "(6) Multiracial"="ChOtherMultiracial"))
-# center child outcome measures from Fall (to be entered as control vars), to ease interpretation of coefs
-child_data$PPVTEPF <- scale(child_data$PPVTEPF, center=T, scale=F)
-child_data$WJ1_SSEPF <- scale(child_data$WJ1_SSEPF, center=T, scale=F)
-child_data$WJ10_SSEPF <- scale(child_data$WJ10_SSEPF, center=T, scale=F)
+# center child outcome measures
+child_data$PPVTEPF <- as.numeric(scale(child_data$PPVTEPF, center=T, scale=F))
+child_data$PPVTEPS <- as.numeric(scale(child_data$PPVTEPS, center=T, scale=F))
+child_data$WJ1_SSEPF <- as.numeric(scale(child_data$WJ1_SSEPF, center=T, scale=F))
+child_data$WJ1_SSEPS <- as.numeric(scale(child_data$WJ1_SSEPS, center=T, scale=F))
+child_data$WJ10_SSEPF <- as.numeric(scale(child_data$WJ10_SSEPF, center=T, scale=F))
+child_data$WJ10_SSEPS <- as.numeric(scale(child_data$WJ10_SSEPS, center=T, scale=F))
+# center class outcome measure
+class_data$ECERTOTP <- as.numeric(scale(class_data$ECERTOTP, center=T, scale=F))
 
 # -------------------------------------------------
 # modify proportion variables to be able to be described by a beta dist
@@ -168,13 +173,6 @@ table(df[,c("STATE.x", "STATE.y")], useNA="always")
 df$STATE <- df$STATE.x
 df$STATE[which(df$STATE.x != df$STATE.y)] <- NA # make STATE missing when there is disagreement between class level and child level data
 df <- subset(df, select=-c(STATE.x, STATE.y)) #remove extra state vars
-
-# some weirdness in the datafile...
-df$PPVTEPF <- as.numeric(df$PPVTEPF)
-df$WJ1_SSEPF <- as.numeric(df$WJ1_SSEPF)
-df$WJ10_SSEPF <- as.numeric(df$WJ10_SSEPF)
-df$ECERTOTP <- as.numeric(scale(df$ECERTOTP, center=TRUE, scale=FALSE))
-
 ```
 
 # Frequentist Analyses
