@@ -973,14 +973,15 @@ inits1 <-list(tau= 1, tau.class=1, b.PPVTEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLati
               PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 inits2 <- inits1
+inits3 <- inits1
 
 # -------------------------------------------------
 # run the model
 # -------------------------------------------------
 
 library(R2jags) 
-q1m3.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 4000)
+q1m3.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 3, n.iter = 25000, n.burnin = 15000, n.thin=2)
 ```
 
 ### Model 4: Bachelors degree as a predictor of receptive lang (PPVT)
@@ -1115,14 +1116,15 @@ inits1 <-list(tau= 1, tau.class=1, b.PPVTEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLati
               PPVTEPF=PPVTEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 inits2 <- inits1
+inits3 <- inits1
 
 # -------------------------------------------------
 # run the model
 # -------------------------------------------------
 
 library(R2jags) 
-q1m4.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 4000)
+q1m4.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 3, n.iter = 25000, n.burnin = 15000, n.thin=2)
 ```
 
 ### Model 5: Highest degree as predictor of prereading (WJ1_SSEP)
@@ -1266,14 +1268,15 @@ inits1 <-list(tau= 1, tau.class=1, b.WJ1_SSEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLa
               WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 inits2 <- inits1
+inits3 <- inits1
 
 # -------------------------------------------------
 # run the model
 # -------------------------------------------------
 
 library(R2jags) 
-q1m5.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 4000)
+q1m5.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 3, n.iter = 25000, n.burnin = 15000, n.thin=2)
 ```
 
 ### Model 6: Bachelors degree as predictor of prereading (WJ1_SSEP)
@@ -1405,14 +1408,15 @@ inits1 <-list(tau= 1, tau.class=1, b.WJ1_SSEPF= 0, b.CHGENP=0, b.POORP=0, b.ChLa
               WJ1_SSEPF=WJ1_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 inits2 <- inits1
+inits3 <- inits1
 
 # -------------------------------------------------
 # run the model
 # -------------------------------------------------
 
 library(R2jags) 
-q1m6.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 4000)
+q1m6.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 3, n.iter = 25000, n.burnin = 15000, n.thin=2)
 ```
 
 ### Model 7: Highest degree as predictor of early math (WJ10_SSEP)
@@ -1556,14 +1560,15 @@ inits1 <-list(tau= 1, tau.class=1, b.WJ10_SSEPF= 0, b.CHGENP=0, b.POORP=0, b.ChL
               WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, HS=HS.inits, AS=AS.inits, BA=BA.inits, Grad=Grad.inits)
 inits2 <- inits1
+inits3 <- inits1
 
 # -------------------------------------------------
 # run the model
 # -------------------------------------------------
 
 library(R2jags) 
-q1m7.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 10000, n.burnin = 4000)
+q1m7.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 3, n.iter = 25000, n.burnin = 15000, n.thin=2)
 ```
 
 ### Model 8: Bachelors degree as predictor of early math (WJ10_SSEP)
@@ -1695,14 +1700,15 @@ inits1 <-list(tau= 1, tau.class=1, b.WJ10_SSEPF= 0, b.CHGENP=0, b.POORP=0, b.ChL
               WJ10_SSEPF=WJ10_SSEPF.inits, CHGENP=CHGENP.inits, POORP=POORP.inits, ChLatino=ChLatino.inits, ChAfricanAmerican=ChAfricanAmerican.inits, ChOtherMultiracial=ChOtherMultiracial.inits, CHMATEDNP=CHMATEDNP.inits, 
               LOCATIONP=LOCATIONP.inits, FULLDAYP=FULLDAYP.inits, BachelorsY=BachelorsY.inits, BachelorsN=BachelorsN.inits)
 inits2 <- inits1
+inits3 <- inits1
 
 # -------------------------------------------------
 # run the model
 # -------------------------------------------------
 
 library(R2jags) 
-q1m8.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
-            model.file = jags.model, n.chains = 2, n.iter = 14000, n.burnin = 4000)
+q1m8.fit <- jags(data = jags.dat, inits = list(inits1, inits2, inits3), parameters.to.save = params, 
+            model.file = jags.model, n.chains = 3, n.iter = 25000, n.burnin = 15000, n.thin=2)
 ```
 
 ## Question 2
