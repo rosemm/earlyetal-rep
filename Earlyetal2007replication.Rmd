@@ -698,7 +698,6 @@ inits2 <- inits1
 # -------------------------------------------------
 
 library(R2jags) 
-# set.seed(24601)
 q1m1.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
             model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
 ```
@@ -827,7 +826,6 @@ inits2 <- inits1
 # -------------------------------------------------
 
 library(R2jags) 
-# set.seed(24601)
 q1m2.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
             model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
 ```
@@ -981,7 +979,6 @@ inits2 <- inits1
 # -------------------------------------------------
 
 library(R2jags) 
-# set.seed(123)
 q1m3.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
             model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
 ```
@@ -1124,7 +1121,6 @@ inits2 <- inits1
 # -------------------------------------------------
 
 library(R2jags) 
-# set.seed(123)
 q1m4.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
             model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
 ```
@@ -1276,7 +1272,6 @@ inits2 <- inits1
 # -------------------------------------------------
 
 library(R2jags) 
-# set.seed(123)
 q1m5.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
             model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
 ```
@@ -1416,7 +1411,6 @@ inits2 <- inits1
 # -------------------------------------------------
 
 library(R2jags) 
-# set.seed(123)
 q1m6.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
             model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
 ```
@@ -1568,7 +1562,6 @@ inits2 <- inits1
 # -------------------------------------------------
 
 library(R2jags) 
-# set.seed(123)
 q1m7.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
             model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
 ```
@@ -1708,7 +1701,6 @@ inits2 <- inits1
 # -------------------------------------------------
 
 library(R2jags) 
-# set.seed(123)
 q1m8.fit <- jags(data = jags.dat, inits = list(inits1, inits2), parameters.to.save = params, 
             model.file = jags.model, n.chains = 2, n.iter = 1000, n.burnin = 100)
 ```
