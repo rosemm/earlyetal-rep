@@ -465,7 +465,7 @@ jags.dat$AS <- as.vector(by(as.numeric(df$AS), df$CLASS, mean))
 jags.dat$BA <- as.vector(by(as.numeric(df$BA), df$CLASS, mean))
 jags.dat$Grad <- as.vector(by(as.numeric(df$Grad), df$CLASS, mean))
 # add Bachelors
-jags.dat$Bachelors <- ifelse(jags.dat$HS==1, 0, ifelse(jags.dat$AS==1, 0, ifelse(jags.dat$BA==1,1, ifelse(jags.dat$Grad==1, 1, NA)))) # reference group is no bachelors
+jags.dat$Bachelors <- ifelse(jags.dat$BA==1, 1, ifelse(jags.dat$Grad==1, 1, ifelse(jags.dat$BA==0, 0, ifelse(jags.dat$Grad==0, 0, NA)))) # reference group is no bachelors
 
 
 # need to add L1 n, and L2 n
@@ -529,6 +529,7 @@ jags.dat$param.OtherMajor <- mean(jags.dat$OtherMajor, na.rm=TRUE)
 jags.dat$param.AS <- mean(jags.dat$AS, na.rm=TRUE)
 jags.dat$param.BA <- mean(jags.dat$BA, na.rm=TRUE)
 jags.dat$param.Grad <- mean(jags.dat$Grad, na.rm=TRUE)
+jags.dat$param.Bachelors <- mean(jags.dat$Bachelors, na.rm=TRUE)
 
 # for the gamma dists
 library(psych)
@@ -709,7 +710,7 @@ jags.model <- function(){
       # teacher race
       b.TLatino * TLatino[j] +
       b.TOtherMultiracial * TOtherMultiracial[j] +
-      # teacher has at least BA? (both codes because no intercept in the model) 
+      # teacher has at least BA?  
       b.Bachelors * Bachelors[j]
     }
   
@@ -871,7 +872,7 @@ jags.model <- function(){
   
   b.class.hat.mu <- mean(b.class.hat[])
   
-  b.0class ~ dnorm(0,.01)b.0class ~ dnorm(0,.01)
+  b.0class ~ dnorm(0,.01)
   b.LOCATIONP ~ dnorm(0,.01)
   b.FULLDAYP ~ dnorm(0,.01)
   b.AS ~ dnorm(0,.01)
@@ -1024,8 +1025,7 @@ jags.model <- function(){
   
   b.class.hat.mu <- mean(b.class.hat[])
   
-
-  b.0class ~ dnorm(0,.01)b.0class ~ dnorm(0,.01)
+  b.0class ~ dnorm(0,.01)
   b.LOCATIONP ~ dnorm(0,.01)
   b.FULLDAYP ~ dnorm(0,.01)
   b.Bachelors ~ dnorm(0,.01)
@@ -1159,7 +1159,6 @@ jags.model <- function(){
       b.0class + 
       b.LOCATIONP * LOCATIONP[j] + 
       b.FULLDAYP * FULLDAYP[j] + 
-      b.HS * HS[j] +
       b.AS * AS[j] +
       b.BA * BA[j] +
       b.Grad * Grad[j]
@@ -1168,7 +1167,6 @@ jags.model <- function(){
       # priors on L2 predictors, for multiple imputation
       LOCATIONP[j] ~ dbern(param.LOCATIONP) # 0 or 1
       FULLDAYP[j] ~ dbern(param.FULLDAYP) # 0 or 1
-      HS[j] ~ dbern(param.HS) # 0 or 1
       AS[j] ~ dbern(param.AS) # 0 or 1
       BA[j] ~ dbern(param.BA) # 0 or 1
       Grad[j] ~ dbern(param.Grad) # 0 or 1
@@ -1179,7 +1177,6 @@ jags.model <- function(){
   b.0class ~ dnorm(0,.01)
   b.LOCATIONP ~ dnorm(0,.01)
   b.FULLDAYP ~ dnorm(0,.01)
-  b.HS ~ dnorm(0,.01)
   b.AS ~ dnorm(0,.01)
   b.BA ~ dnorm(0,.01)
   b.Grad ~ dnorm(0,.01)
@@ -1192,7 +1189,7 @@ jags.model <- function(){
 # set the parameters to track
 # -------------------------------------------------
 params <- c("b.WJ1_SSEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
-            "b.LOCATIONP", "b.FULLDAYP", "b.HS", "b.AS", "b.BA", "b.Grad",
+            "b.LOCATIONP", "b.FULLDAYP", "b.AS", "b.BA", "b.Grad",
             "tau", "tau.class", "b.0class")
 
 # -------------------------------------------------
@@ -1461,7 +1458,6 @@ jags.model <- function(){
       b.0class + 
       b.LOCATIONP * LOCATIONP[j] + 
       b.FULLDAYP * FULLDAYP[j] + 
-      b.HS * HS[j] +
       b.AS * AS[j] +
       b.BA * BA[j] +
       b.Grad * Grad[j]
@@ -1470,7 +1466,6 @@ jags.model <- function(){
       # priors on L2 predictors, for multiple imputation
       LOCATIONP[j] ~ dbern(param.LOCATIONP) # 0 or 1
       FULLDAYP[j] ~ dbern(param.FULLDAYP) # 0 or 1
-      HS[j] ~ dbern(param.HS) # 0 or 1
       AS[j] ~ dbern(param.AS) # 0 or 1
       BA[j] ~ dbern(param.BA) # 0 or 1
       Grad[j] ~ dbern(param.Grad) # 0 or 1
@@ -1481,7 +1476,6 @@ jags.model <- function(){
   b.0class ~ dnorm(0,.01)
   b.LOCATIONP ~ dnorm(0,.01)
   b.FULLDAYP ~ dnorm(0,.01)
-  b.HS ~ dnorm(0,.01)
   b.AS ~ dnorm(0,.01)
   b.BA ~ dnorm(0,.01)
   b.Grad ~ dnorm(0,.01)
@@ -1494,7 +1488,7 @@ jags.model <- function(){
 # set the parameters to track
 # -------------------------------------------------
 params <- c("b.WJ10_SSEPF", "b.CHGENP", "b.POORP", "b.ChLatino", "b.ChAfricanAmerican", "b.ChOtherMultiracial", "b.CHMATEDNP",
-            "b.LOCATIONP", "b.FULLDAYP", "b.HS", "b.AS", "b.BA", "b.Grad",
+            "b.LOCATIONP", "b.FULLDAYP", "b.AS", "b.BA", "b.Grad",
             "tau", "tau.class", "b.0class")
 
 # -------------------------------------------------
@@ -1747,10 +1741,10 @@ for(i in 1:4){
   fit.gg <- ggs(fit.mcmc)
   # drop first 1000 iterations (more burn-in)
   fit.gg <- fit.gg[fit.gg$Iteration>1000,]
-  ggmcmc(fit.gg, file=paste(DV[[i]], "by", IV[[1]], "ggmcmc-output.pdf", sep="-"))
+  # ggmcmc(fit.gg, file=paste(DV[[i]], "by", IV[[1]], "ggmcmc-output.pdf", sep="-"))
   fit.gg$Chain <- 1 # collapse chains together, since convergence appears to be okay
   
-  betas <- subset(fit.gg, Parameter=="b.0" | Parameter=="b.AS" | Parameter=="b.BA" | Parameter=="b.Grad")
+  betas <- subset(fit.gg, Parameter=="b.0" | Parameter=="b.0class" | Parameter=="b.AS" | Parameter=="b.BA" | Parameter=="b.Grad")
   
   degree <- ggplot(betas, aes(x=value)) +
   facet_wrap(~Parameter, scales="fixed", ncol=2) +
@@ -1763,14 +1757,14 @@ for(i in 1:4){
   fit <- bachelor.fits[[i]]
   round(fit$BUGSoutput$summary[, c(1, 2, 3, 7)],3)
   fit.mcmc <- as.mcmc(fit)
-  mcmcplot(fit.mcmc)
+  #mcmcplot(fit.mcmc)
   fit.gg <- ggs(fit.mcmc)
    # drop first 1000 iterations (more burn-in)
   fit.gg <- fit.gg[fit.gg$Iteration>1000,]
-  ggmcmc(fit.gg, file=paste(DV[[i]], "by", IV[[2]], "ggmcmc-output.pdf", sep="-"))
+  #ggmcmc(fit.gg, file=paste(DV[[i]], "by", IV[[2]], "ggmcmc-output.pdf", sep="-"))
   fit.gg$Chain <- 1 # collapse both chains together, since convergence appears to be good
   
-  betas <- subset(fit.gg, Parameter=="b.Bachelors" | Parameter=="b.0" )
+  betas <- subset(fit.gg, Parameter=="b.Bachelors" | Parameter=="b.0" | Parameter=="b.0class" )
  
   bachelors <- ggplot(betas, aes(x=value)) +
   facet_wrap(~Parameter, scales="fixed", ncol=2) +
